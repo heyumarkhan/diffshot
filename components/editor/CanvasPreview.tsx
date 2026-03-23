@@ -1,6 +1,7 @@
 "use client"
 
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react"
+// Note: wrapperRef is declared inside the component body
 import { EditorState, EXPORT_SIZES } from "@/lib/constants"
 
 interface CanvasPreviewProps {
@@ -289,40 +290,51 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
       ctx.restore()
     }
 
+    const wrapperRef = useRef<HTMLDivElement>(null)
+
+    // Always render at full export dimensions, scale with CSS
+    function applyScale() {
+      const canvas = canvasEl.current
+      const wrapper = wrapperRef.current
+      if (!canvas || !wrapper) return
+      const { width, height } = EXPORT_SIZES[state.exportSize]
+      const availW = wrapper.clientWidth - 48
+      const availH = wrapper.clientHeight - 48
+      const scale = Math.min(availW / width, availH / height, 1)
+      canvas.style.transform = `scale(${scale})`
+      canvas.style.transformOrigin = "top center"
+    }
+
     useImperativeHandle(ref, () => ({
       async exportPNG() {
         const canvas = canvasEl.current
         if (!canvas) return
-        const { width, height } = EXPORT_SIZES[state.exportSize]
-        // Export at full resolution — no DPR scaling
-        await renderCanvas(canvas, width, height, 1)
+        // Canvas is already rendered at full export dimensions — just export it
         const url = canvas.toDataURL("image/png", 1.0)
         const a = document.createElement("a")
         a.href = url
         a.download = "diffshot.png"
         a.click()
-        // Restore preview
-        const dpr = window.devicePixelRatio || 1
-        const displayW = (canvas.parentElement?.clientWidth || 700) - 48
-        const displayH = Math.round(displayW * height / width)
-        await renderCanvas(canvas, displayW, displayH, dpr)
       },
     }))
 
     useEffect(() => {
       const canvas = canvasEl.current
       if (!canvas) return
-      const container = canvas.parentElement
-      if (!container) return
-
-      const { width: expW, height: expH } = EXPORT_SIZES[state.exportSize]
-      const displayW = container.clientWidth - 48
-      const displayH = Math.round(displayW * expH / expW)
-      const dpr = window.devicePixelRatio || 1
-
-      renderCanvas(canvas, displayW, displayH, dpr)
+      const { width, height } = EXPORT_SIZES[state.exportSize]
+      // Always render at full export resolution
+      renderCanvas(canvas, width, height, 1).then(() => applyScale())
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [state])
+
+    useEffect(() => {
+      const wrapper = wrapperRef.current
+      if (!wrapper) return
+      const ro = new ResizeObserver(() => applyScale())
+      ro.observe(wrapper)
+      return () => ro.disconnect()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [state.exportSize])
 
     if (!state.beforeImage && !state.afterImage) {
       return (
@@ -337,11 +349,11 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
     }
 
     return (
-      <div className="w-full h-full flex items-center justify-center p-6">
+      <div ref={wrapperRef} className="w-full h-full flex items-start justify-center pt-6 overflow-hidden">
         <canvas
           ref={canvasEl}
-          className="max-w-full max-h-full rounded-xl shadow-2xl"
-          style={{ objectFit: "contain" }}
+          className="rounded-xl shadow-2xl flex-shrink-0"
+          style={{ transformOrigin: "top center" }}
         />
       </div>
     )

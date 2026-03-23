@@ -34,12 +34,17 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
   function CanvasPreview({ state }, ref) {
     const canvasEl = useRef<HTMLCanvasElement>(null)
 
-    async function renderCanvas(canvas: HTMLCanvasElement, exportW: number, exportH: number) {
+    async function renderCanvas(canvas: HTMLCanvasElement, exportW: number, exportH: number, dpr = 1) {
       const ctx = canvas.getContext("2d")
       if (!ctx) return
 
-      canvas.width = exportW
-      canvas.height = exportH
+      canvas.width = exportW * dpr
+      canvas.height = exportH * dpr
+      canvas.style.width = exportW + "px"
+      canvas.style.height = exportH + "px"
+      ctx.scale(dpr, dpr)
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = "high"
       ctx.clearRect(0, 0, exportW, exportH)
 
       const PAD = Math.round(exportW * 0.04)
@@ -198,6 +203,8 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
         })
       }
 
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = "high"
       ctx.drawImage(img, imgX, imgY, imgW, imgH)
       ctx.restore()
     }
@@ -287,16 +294,18 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
         const canvas = canvasEl.current
         if (!canvas) return
         const { width, height } = EXPORT_SIZES[state.exportSize]
-        await renderCanvas(canvas, width, height)
-        const url = canvas.toDataURL("image/png")
+        // Export at full resolution — no DPR scaling
+        await renderCanvas(canvas, width, height, 1)
+        const url = canvas.toDataURL("image/png", 1.0)
         const a = document.createElement("a")
         a.href = url
         a.download = "diffshot.png"
         a.click()
-        // Restore display size
-        const displayW = canvas.parentElement?.clientWidth || 700
+        // Restore preview
+        const dpr = window.devicePixelRatio || 1
+        const displayW = (canvas.parentElement?.clientWidth || 700) - 48
         const displayH = Math.round(displayW * height / width)
-        await renderCanvas(canvas, displayW, displayH)
+        await renderCanvas(canvas, displayW, displayH, dpr)
       },
     }))
 
@@ -309,8 +318,9 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
       const { width: expW, height: expH } = EXPORT_SIZES[state.exportSize]
       const displayW = container.clientWidth - 48
       const displayH = Math.round(displayW * expH / expW)
+      const dpr = window.devicePixelRatio || 1
 
-      renderCanvas(canvas, displayW, displayH)
+      renderCanvas(canvas, displayW, displayH, dpr)
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [state])
 

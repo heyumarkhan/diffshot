@@ -27,7 +27,7 @@ export default function CreatePage() {
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto">
           {/* Upload zone — always visible at top */}
           <div className="px-5 pt-5 pb-4 border-b border-gray-100">
             <UploadZone

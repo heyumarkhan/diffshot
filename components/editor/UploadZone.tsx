@@ -41,7 +41,7 @@ function DropBox({
 
   return (
     <div
-      className={`flex-1 border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors min-h-[160px] ${
+      className={`flex-1 border-2 border-dashed rounded-xl p-3 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors h-[150px] overflow-hidden ${
         dragging ? "border-blue-400 bg-blue-50" : "border-gray-300 bg-gray-50 hover:border-blue-300 hover:bg-blue-50"
       }`}
       onClick={() => inputRef.current?.click()}
@@ -58,16 +58,16 @@ function DropBox({
       />
       {preview ? (
         <>
-          <img src={preview} alt={label} className="max-h-24 max-w-full rounded-lg object-contain shadow-sm" />
-          <p className="text-xs text-gray-500 truncate max-w-full">{image?.name}</p>
+          <img src={preview} alt={label} className="h-[80px] max-w-full rounded-md object-contain shadow-sm flex-shrink-0" />
+          <p className="text-xs text-gray-500 truncate max-w-full px-2 text-center">{image?.name}</p>
           <span className="text-xs text-blue-600 font-medium">Click to change</span>
         </>
       ) : (
         <>
-          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-xl">+</div>
+          <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-lg flex-shrink-0">+</div>
           <p className="text-sm font-semibold text-gray-600">{label}</p>
-          <p className="text-xs text-gray-400">Drop or click to upload</p>
-          <p className="text-xs text-gray-300">PNG, JPG, WebP — max 10MB</p>
+          <p className="text-xs text-gray-400">Drop or click</p>
+          <p className="text-xs text-gray-300">PNG, JPG, WebP</p>
         </>
       )}
     </div>

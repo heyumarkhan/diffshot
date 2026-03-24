@@ -12,12 +12,14 @@ export interface CanvasPreviewHandle {
   exportPNG: () => Promise<void>
 }
 
-function scaleToFit(imgW: number, imgH: number, boxW: number, boxH: number) {
+function scaleToFit(imgW: number, imgH: number, boxW: number, boxH: number, vAlign: "top" | "center" | "bottom" = "center") {
   const scale = Math.min(boxW / imgW, boxH / imgH)
+  const renderedH = imgH * scale
+  const offsetY = vAlign === "top" ? 0 : vAlign === "bottom" ? boxH - renderedH : (boxH - renderedH) / 2
   return {
     scale,
     offsetX: (boxW - imgW * scale) / 2,
-    offsetY: (boxH - imgH * scale) / 2,
+    offsetY,
   }
 }
 
@@ -74,12 +76,17 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
 
       const layout = state.layout
 
+      // Vertical alignment for images based on label position
+      const imgVAlign = state.labelPosition === "above" ? "top"
+        : state.labelPosition === "below" ? "bottom"
+        : "center"
+
       if (layout === "side-by-side") {
         const panelW = Math.floor((exportW - PAD * 2 - GAP) / 2)
         const panelH = exportH - PAD * 2 - topOffset - bottomOffset
 
-        await drawImagePanel(ctx, state.beforeImage, PAD, PAD + topOffset, panelW, panelH, state)
-        await drawImagePanel(ctx, state.afterImage, PAD + panelW + GAP, PAD + topOffset, panelW, panelH, state)
+        await drawImagePanel(ctx, state.beforeImage, PAD, PAD + topOffset, panelW, panelH, state, imgVAlign)
+        await drawImagePanel(ctx, state.afterImage, PAD + panelW + GAP, PAD + topOffset, panelW, panelH, state, imgVAlign)
 
         if (state.labelPosition !== "hidden") {
           drawLabel(ctx, state.beforeLabel, state.beforeSublabel, PAD + panelW / 2, state.labelPosition === "above" ? PAD : PAD + topOffset + panelH + 8, state)
@@ -96,8 +103,8 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
         const panelW = exportW - PAD * 2
         const panelH = Math.floor((exportH - PAD * 2 - GAP - topOffset * 2 - bottomOffset * 2) / 2)
 
-        await drawImagePanel(ctx, state.beforeImage, PAD, PAD + topOffset, panelW, panelH, state)
-        await drawImagePanel(ctx, state.afterImage, PAD, PAD + topOffset + panelH + GAP + topOffset, panelW, panelH, state)
+        await drawImagePanel(ctx, state.beforeImage, PAD, PAD + topOffset, panelW, panelH, state, imgVAlign)
+        await drawImagePanel(ctx, state.afterImage, PAD, PAD + topOffset + panelH + GAP + topOffset, panelW, panelH, state, imgVAlign)
 
         if (state.labelPosition !== "hidden") {
           drawLabel(ctx, state.beforeLabel, state.beforeSublabel, PAD + panelW / 2, state.labelPosition === "above" ? PAD : PAD + topOffset + panelH + 8, state)
@@ -131,7 +138,7 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
         const sub = layout === "before-only" ? state.beforeSublabel : state.afterSublabel
         const panelW = exportW - PAD * 2
         const panelH = exportH - PAD * 2 - topOffset - bottomOffset
-        await drawImagePanel(ctx, img, PAD, PAD + topOffset, panelW, panelH, state)
+        await drawImagePanel(ctx, img, PAD, PAD + topOffset, panelW, panelH, state, imgVAlign)
         if (state.labelPosition !== "hidden") {
           drawLabel(ctx, lbl, sub, PAD + panelW / 2, state.labelPosition === "above" ? PAD : PAD + topOffset + panelH + 8, state)
         }
@@ -153,7 +160,8 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
       ctx: CanvasRenderingContext2D,
       file: File | null,
       x: number, y: number, w: number, h: number,
-      s: EditorState
+      s: EditorState,
+      vAlign: "top" | "center" | "bottom" = "center"
     ) {
       if (!file) {
         ctx.fillStyle = "#e5e7eb"
@@ -167,7 +175,7 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
       }
 
       const img = await loadImage(file)
-      const { scale, offsetX, offsetY } = scaleToFit(img.width, img.height, w, h)
+      const { scale, offsetX, offsetY } = scaleToFit(img.width, img.height, w, h, vAlign)
 
       ctx.save()
 

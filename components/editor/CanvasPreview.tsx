@@ -345,7 +345,7 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
       const availH = wrapper.clientHeight - 48
       const scale = Math.min(availW / width, availH / height, 1)
       canvas.style.transform = `scale(${scale})`
-      canvas.style.transformOrigin = "top center"
+      canvas.style.transformOrigin = "center center"
     }
 
     useImperativeHandle(ref, () => ({
@@ -356,7 +356,7 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
         const url = canvas.toDataURL("image/png", 1.0)
         const a = document.createElement("a")
         a.href = url
-        a.download = "diffshot.png"
+        a.download = "gleamshot.png"
         a.click()
       },
     }))
@@ -392,11 +392,11 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
     }
 
     return (
-      <div ref={wrapperRef} className="w-full h-full flex items-start justify-center pt-6 overflow-hidden">
+      <div ref={wrapperRef} className="w-full h-full flex items-center justify-center overflow-hidden">
         <canvas
           ref={canvasEl}
           className="rounded-xl shadow-2xl flex-shrink-0"
-          style={{ transformOrigin: "top center" }}
+          style={{ transformOrigin: "center center" }}
         />
       </div>
     )

@@ -4,6 +4,10 @@ import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
+export const icons = {
+  icon: "/favicon.svg",
+}
+
 export const metadata: Metadata = {
   title: "GleamShot — Beautiful Screenshot Tool for Makers",
   description:

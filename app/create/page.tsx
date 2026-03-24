@@ -17,7 +17,7 @@ export default function CreatePage() {
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto pb-24">
         <div className="px-5 pt-5 pb-4 border-b border-gray-100">
           <UploadZone
             beforeImage={state.beforeImage}
@@ -36,9 +36,18 @@ export default function CreatePage() {
           )}
         </div>
       </div>
-      <div className="px-5 py-4 border-t border-gray-100 bg-white flex-shrink-0">
-        <ExportButton canvasRef={canvasRef} disabled={!hasImages} />
-      </div>
+    </div>
+  )
+
+  const floatingDownload = (
+    <div className="fixed bottom-6 left-0 w-[400px] px-5 z-50 hidden md:block">
+      <ExportButton canvasRef={canvasRef} disabled={!hasImages} />
+    </div>
+  )
+
+  const mobileFloatingDownload = (
+    <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden">
+      <ExportButton canvasRef={canvasRef} disabled={!hasImages} />
     </div>
   )
 
@@ -59,6 +68,7 @@ export default function CreatePage() {
           <CanvasPreview ref={canvasRef} state={state} />
         </div>
       </div>
+      {floatingDownload}
 
       {/* ── MOBILE LAYOUT (below md) ── */}
       <div className="flex flex-col h-screen overflow-hidden bg-gray-50 md:hidden">
@@ -94,6 +104,7 @@ export default function CreatePage() {
           )}
         </div>
       </div>
+      {mobileFloatingDownload}
     </>
   )
 }

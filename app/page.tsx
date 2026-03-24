@@ -31,12 +31,12 @@ export default function Home() {
         </p>
 
         <h1 className="text-5xl md:text-7xl font-black leading-[1.05] max-w-3xl mb-6 tracking-tight">
-          Make your screenshots<br />
-          <span className="text-blue-400">actually look good.</span>
+          Stop wasting time<br />
+          <span className="text-blue-400">on a simple visual.</span>
         </h1>
 
         <p className="text-xl text-gray-400 max-w-lg mb-10">
-          Upload a screenshot. Style it. Download a polished PNG. No Canva. No Figma. No nonsense.
+          Upload two screenshots. Download a polished Before/After PNG. No Canva. No Figma. No nonsense.
         </p>
 
         <Link

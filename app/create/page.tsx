@@ -1,5 +1,6 @@
 "use client"
 
+// Metadata is in a separate server component — see layout for base metadata
 import { useRef, useState } from "react"
 import { useEditorState } from "@/hooks/useEditorState"
 import { UploadZone } from "@/components/editor/UploadZone"
@@ -48,7 +49,7 @@ export default function CreatePage() {
         <div className="w-[400px] flex-shrink-0 border-r border-gray-200 bg-white flex flex-col">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
             <a href="/" className="flex items-center gap-2 text-blue-600 font-bold hover:text-blue-700">
-              <span>⇌</span><span>DiffShot</span>
+              <span>✦</span><span>GleamShot</span>
             </a>
             <span className="text-xs text-gray-400">Free · No login</span>
           </div>
@@ -64,7 +65,7 @@ export default function CreatePage() {
         {/* Mobile header */}
         <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 flex-shrink-0">
           <a href="/" className="flex items-center gap-1.5 font-bold text-blue-600">
-            <span>⇌</span><span>DiffShot</span>
+            <span>✦</span><span>GleamShot</span>
           </a>
           <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs font-medium">
             <button

@@ -319,7 +319,7 @@ export function Sidebar({ state, onChange }: SidebarProps) {
           <Toggle
             checked={state.showWatermark}
             onChange={(val) => onChange({ showWatermark: val })}
-            label="Show &quot;Made with DiffShot&quot;"
+            label="Show &quot;Made with GleamShot&quot;"
           />
           <p className="text-xs text-gray-400 pl-13">Keeping this on helps us grow ❤️</p>
         </div>

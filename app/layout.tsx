@@ -5,14 +5,24 @@ import "./globals.css"
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
 export const metadata: Metadata = {
-  title: "DiffShot — Before/After Screenshot Tool for SaaS Founders",
+  title: "GleamShot — Beautiful Screenshot Tool for Makers",
   description:
-    "Turn two screenshots into a shareable Before/After visual in 30 seconds. Free. No login. No uploads to any server. Built for SaaS founders and indie makers.",
+    "Turn any screenshot into a polished, shareable visual in seconds. Free. No login. No uploads to any server. Built for founders, designers, and makers.",
+  metadataBase: new URL("https://gleamshot.io"),
   openGraph: {
-    title: "DiffShot — Before/After Screenshot Tool",
-    description: "Turn two screenshots into a shareable visual in 30 seconds. Free. No login required.",
+    title: "GleamShot — Beautiful Screenshots in Seconds",
+    description: "Turn any screenshot into a polished, shareable visual in seconds. Free. No login required.",
+    url: "https://gleamshot.io",
+    siteName: "GleamShot",
     type: "website",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "GleamShot — Beautiful Screenshots in Seconds",
+    description: "Turn any screenshot into a polished, shareable visual in seconds. Free. No login required.",
+    creator: "@umarkhan",
+  },
+  keywords: ["screenshot tool", "before after screenshot", "screenshot beautifier", "screenshot framing", "makers tool"],
 }
 
 export default function RootLayout({

@@ -1,4 +1,15 @@
+import type { Metadata } from "next"
 import Link from "next/link"
+
+export const metadata: Metadata = {
+  title: "GleamShot — Beautiful Screenshots in Seconds",
+  description: "Turn any screenshot into a polished, shareable visual in seconds. Free. No login. No uploads to any server.",
+  openGraph: {
+    title: "GleamShot — Beautiful Screenshots in Seconds",
+    description: "Turn any screenshot into a polished, shareable visual in seconds. Free. No login. No uploads to any server.",
+    url: "https://gleamshot.io",
+  },
+}
 
 export default function Home() {
   return (
@@ -6,8 +17,8 @@ export default function Home() {
       {/* Nav */}
       <nav className="flex items-center justify-between px-8 py-5 border-b border-white/10 flex-shrink-0">
         <div className="flex items-center gap-2 font-bold text-lg">
-          <span className="text-blue-400">⇌</span>
-          <span>DiffShot</span>
+          <span className="text-blue-400">✦</span>
+          <span>GleamShot</span>
         </div>
         <span className="text-xs text-gray-400 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">Free · No login</span>
       </nav>
@@ -20,12 +31,12 @@ export default function Home() {
         </p>
 
         <h1 className="text-5xl md:text-7xl font-black leading-[1.05] max-w-3xl mb-6 tracking-tight">
-          Stop wasting time<br />
-          <span className="text-blue-400">on a simple visual.</span>
+          Make your screenshots<br />
+          <span className="text-blue-400">actually look good.</span>
         </h1>
 
         <p className="text-xl text-gray-400 max-w-lg mb-10">
-          Upload two screenshots. Download a polished Before/After PNG. No Canva. No Figma. No nonsense.
+          Upload a screenshot. Style it. Download a polished PNG. No Canva. No Figma. No nonsense.
         </p>
 
         <Link

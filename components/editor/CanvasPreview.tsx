@@ -186,7 +186,7 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
         ctx.fillStyle = "#999999"
         ctx.textAlign = "right"
         ctx.textBaseline = "bottom"
-        ctx.fillText("Made with DiffShot", exportW - 12, exportH - 10)
+        ctx.fillText("Made with GleamShot", exportW - 12, exportH - 10)
         ctx.restore()
       }
     }

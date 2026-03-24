@@ -22,6 +22,7 @@ export const DEFAULT_STATE = {
   afterSublabel: "",
   labelPosition: "above" as "above" | "below" | "inside" | "hidden",
   labelFontSize: 28,
+  labelGap: 12,
   labelColor: "#111111",
   showArrow: true,
   arrowStyle: "solid" as "solid" | "dashed" | "double",

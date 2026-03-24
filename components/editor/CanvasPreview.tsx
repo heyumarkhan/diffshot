@@ -54,8 +54,10 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
       const SUB_H = state.labelPosition !== "hidden" && (state.beforeSublabel || state.afterSublabel)
         ? Math.round(state.labelFontSize * 1.2)
         : 0
-      const topOffset = state.labelPosition === "above" ? LABEL_H + SUB_H : 0
-      const bottomOffset = state.labelPosition === "below" ? LABEL_H + SUB_H : 0
+      // Scale labelGap relative to 1200px reference so it's consistent across all export sizes
+      const scaledGap = state.labelPosition !== "hidden" ? Math.round(state.labelGap * (exportW / 1200)) : 0
+      const topOffset = state.labelPosition === "above" ? LABEL_H + SUB_H + scaledGap : 0
+      const bottomOffset = state.labelPosition === "below" ? LABEL_H + SUB_H + scaledGap : 0
 
       // Background
       if (state.backgroundType === "solid") {

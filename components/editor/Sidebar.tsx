@@ -113,6 +113,17 @@ export function Sidebar({ state, onChange }: SidebarProps) {
             />
           </div>
           <div>
+            <label className="text-xs text-gray-500 mb-1 block">Spacing from Image: {state.labelGap}px</label>
+            <input
+              type="range"
+              min={0}
+              max={48}
+              value={state.labelGap}
+              onChange={(e) => onChange({ labelGap: Number(e.target.value) })}
+              className="w-full"
+            />
+          </div>
+          <div>
             <label className="text-xs text-gray-500 mb-1 block">Label Color</label>
             <input
               type="color"

@@ -55,9 +55,50 @@ export function Sidebar({ state, onChange }: SidebarProps) {
             Compare
           </button>
         </div>
-        {!hasBothImages && (
-          <p className="text-xs text-gray-400 mt-2">Add a second screenshot to enable compare mode.</p>
-        )}
+        <p className="text-xs text-gray-400 mt-2">
+          {hasBothImages ? "Compare is optional. Switch back to Single any time." : "Add a second screenshot only when you need a comparison."}
+        </p>
+      </div>
+
+      {/* TEXT */}
+      <div>
+        <SectionLabel>Text</SectionLabel>
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs text-gray-500 mb-1 block">Title</label>
+            <input
+              type="text"
+              value={state.title}
+              placeholder="e.g. Product updates"
+              maxLength={90}
+              onChange={(e) => onChange({ title: e.target.value })}
+              className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 mb-1 block">Subtitle</label>
+            <input
+              type="text"
+              value={state.subtitle}
+              placeholder="e.g. Faster review flow for teams"
+              maxLength={140}
+              onChange={(e) => onChange({ subtitle: e.target.value })}
+              className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 mb-1 block">Badge / Tag</label>
+            <input
+              type="text"
+              value={state.badge}
+              placeholder="e.g. NEW"
+              maxLength={28}
+              onChange={(e) => onChange({ badge: e.target.value })}
+              className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          <p className="text-xs text-gray-400">Fixed above the image. Keep it short.</p>
+        </div>
       </div>
 
       {/* PRESETS */}
@@ -124,25 +165,28 @@ export function Sidebar({ state, onChange }: SidebarProps) {
       {/* LAYOUT */}
       {isCompareMode && (
         <div>
-          <SectionLabel>Compare Layout</SectionLabel>
-          <div className="grid grid-cols-2 gap-2">
-            {([
-              { value: "side-by-side", label: "⇌ Side by Side" },
-              { value: "stacked", label: "⇅ Stacked" },
-              { value: "spotlight", label: "◎ Spotlight" },
-            ] as const).map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => onChange({ layout: opt.value })}
-                className={`px-3 py-2.5 rounded-lg text-xs font-medium border transition-colors text-left ${
-                  state.layout === opt.value
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-white text-gray-600 border-gray-200 hover:border-blue-300"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+          <SectionLabel>Compare</SectionLabel>
+          <div className="space-y-3">
+            <p className="text-xs text-gray-400">Tune the comparison only when both images are part of the story.</p>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { value: "side-by-side", label: "Side by side" },
+                { value: "stacked", label: "Stacked" },
+                { value: "spotlight", label: "Spotlight" },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => onChange({ layout: opt.value })}
+                  className={`px-3 py-2.5 rounded-lg text-xs font-medium border transition-colors text-left ${
+                    state.layout === opt.value
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-blue-300"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}

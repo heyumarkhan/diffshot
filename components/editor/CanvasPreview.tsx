@@ -65,7 +65,6 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
         ? Math.round(state.labelFontSize * 1.2) : 0
       const LABEL_ZONE = LABEL_H + SUB_H
       const scaledGap = hasLabel ? Math.round(state.labelGap * (exportW / 1200)) : 0
-      const availH = exportH - PAD * 2
       const availW = exportW - PAD * 2
 
       // Background
@@ -78,6 +77,13 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
         grad.addColorStop(1, state.gradientEnd)
         ctx.fillStyle = grad
         ctx.fillRect(0, 0, exportW, exportH)
+      }
+
+      const textBlock = measureTopText(ctx, state, exportW)
+      const contentTop = PAD + textBlock.height
+      const availH = exportH - contentTop - PAD
+      if (textBlock.height > 0) {
+        drawTopText(ctx, textBlock, exportW, PAD)
       }
 
       // Pre-load images so we can measure natural dimensions for centering
@@ -98,7 +104,7 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
       // Helper: center a content block (labelZone + gap + image) vertically in availH
       function centerBlock(imgH: number): { imgY: number; labelY: number } {
         const totalH = (hasLabel ? LABEL_ZONE + scaledGap : 0) + imgH
-        const startY = PAD + Math.max(0, (availH - totalH) / 2)
+        const startY = contentTop + Math.max(0, (availH - totalH) / 2)
         if (!hasLabel || state.labelPosition === "inside") {
           return { imgY: startY, labelY: startY }
         }
@@ -148,7 +154,7 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
         )
         const labelZoneTotal = hasLabel ? LABEL_ZONE + scaledGap : 0
         const totalH = labelZoneTotal + imgH + GAP + labelZoneTotal + imgH
-        const startY = PAD + Math.max(0, (availH - totalH) / 2)
+        const startY = contentTop + Math.max(0, (availH - totalH) / 2)
 
         const label1Y = hasLabel && state.labelPosition === "above" ? startY : startY + imgH + scaledGap
         const img1Y = hasLabel && state.labelPosition === "above" ? startY + LABEL_ZONE + scaledGap : startY
@@ -170,13 +176,13 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
         const bigW = Math.floor(exportW * 0.75)
         const bigH = availH
         const bigX = exportW - PAD - bigW
-        await drawImagePanel(ctx, afterImg, bigX, PAD, bigW, bigH, state)
+        await drawImagePanel(ctx, afterImg, bigX, contentTop, bigW, bigH, state)
         const smallW = Math.floor(exportW * 0.28)
         const smallH = Math.floor(exportH * 0.35)
-        await drawImagePanel(ctx, beforeImg, PAD, PAD + 20, smallW, smallH, { ...state, frameStyle: "shadow" })
+        await drawImagePanel(ctx, beforeImg, PAD, contentTop + 20, smallW, smallH, { ...state, frameStyle: "shadow" })
         if (hasLabel) {
-          drawLabel(ctx, state.beforeLabel, state.beforeSublabel, PAD + smallW / 2, PAD + 8, state)
-          drawLabel(ctx, state.afterLabel, state.afterSublabel, bigX + bigW / 2, PAD + 8, state)
+          drawLabel(ctx, state.beforeLabel, state.beforeSublabel, PAD + smallW / 2, contentTop + 8, state)
+          drawLabel(ctx, state.afterLabel, state.afterSublabel, bigX + bigW / 2, contentTop + 8, state)
         }
 
       } else if (layout === "single") {
@@ -286,6 +292,131 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
         ctx.fillText(subtext, cx, cy + s.labelFontSize * 1.1)
       }
       ctx.restore()
+    }
+
+    function measureTopText(ctx: CanvasRenderingContext2D, s: EditorState, exportW: number) {
+      const title = s.title.trim()
+      const subtitle = s.subtitle.trim()
+      const badge = s.badge.trim()
+      const hasText = !!(title || subtitle || badge)
+      const titleSize = Math.round(Math.min(Math.max(exportW * 0.042, 30), 58))
+      const subtitleSize = Math.round(Math.min(Math.max(exportW * 0.019, 18), 28))
+      const badgeSize = Math.round(Math.min(Math.max(exportW * 0.014, 14), 18))
+      const maxTextW = exportW * 0.78
+      const titleLineH = Math.round(titleSize * 1.12)
+      const subtitleLineH = Math.round(subtitleSize * 1.35)
+      const titleLines = title ? wrapText(ctx, title, `700 ${titleSize}px Inter, Arial, sans-serif`, maxTextW, 2) : []
+      const subtitleLines = subtitle ? wrapText(ctx, subtitle, `${subtitleSize}px Inter, Arial, sans-serif`, maxTextW, 2) : []
+      const badgeH = badge ? Math.round(badgeSize * 2.1) : 0
+      const badgeGap = badge && (titleLines.length || subtitleLines.length) ? Math.round(exportW * 0.014) : 0
+      const titleGap = titleLines.length && subtitleLines.length ? Math.round(exportW * 0.01) : 0
+      const bottomGap = hasText ? Math.round(exportW * 0.035) : 0
+      const height = badgeH + badgeGap + titleLines.length * titleLineH + titleGap + subtitleLines.length * subtitleLineH + bottomGap
+
+      return {
+        badge,
+        badgeSize,
+        badgeH,
+        badgeGap,
+        titleLines,
+        titleSize,
+        titleLineH,
+        titleGap,
+        subtitleLines,
+        subtitleSize,
+        subtitleLineH,
+        height,
+        maxTextW,
+      }
+    }
+
+    function drawTopText(
+      ctx: CanvasRenderingContext2D,
+      textBlock: ReturnType<typeof measureTopText>,
+      exportW: number,
+      y: number
+    ) {
+      let cursorY = y
+      const centerX = exportW / 2
+
+      ctx.save()
+      ctx.textAlign = "center"
+      ctx.textBaseline = "top"
+
+      if (textBlock.badge) {
+        ctx.font = `700 ${textBlock.badgeSize}px Inter, Arial, sans-serif`
+        const badgeText = textBlock.badge.toUpperCase()
+        const pillW = Math.min(ctx.measureText(badgeText).width + textBlock.badgeSize * 2, textBlock.maxTextW)
+        ctx.fillStyle = "rgba(17, 24, 39, 0.88)"
+        ctx.beginPath()
+        ctx.roundRect(centerX - pillW / 2, cursorY, pillW, textBlock.badgeH, textBlock.badgeH / 2)
+        ctx.fill()
+        ctx.fillStyle = "#FFFFFF"
+        ctx.fillText(badgeText, centerX, cursorY + textBlock.badgeSize * 0.52, pillW - textBlock.badgeSize)
+        cursorY += textBlock.badgeH + textBlock.badgeGap
+      }
+
+      if (textBlock.titleLines.length) {
+        ctx.fillStyle = "#111827"
+        ctx.font = `700 ${textBlock.titleSize}px Inter, Arial, sans-serif`
+        textBlock.titleLines.forEach((line) => {
+          ctx.fillText(line, centerX, cursorY, textBlock.maxTextW)
+          cursorY += textBlock.titleLineH
+        })
+        cursorY += textBlock.titleGap
+      }
+
+      if (textBlock.subtitleLines.length) {
+        ctx.fillStyle = "rgba(17, 24, 39, 0.72)"
+        ctx.font = `${textBlock.subtitleSize}px Inter, Arial, sans-serif`
+        textBlock.subtitleLines.forEach((line) => {
+          ctx.fillText(line, centerX, cursorY, textBlock.maxTextW)
+          cursorY += textBlock.subtitleLineH
+        })
+      }
+
+      ctx.restore()
+    }
+
+    function wrapText(
+      ctx: CanvasRenderingContext2D,
+      text: string,
+      font: string,
+      maxWidth: number,
+      maxLines: number
+    ) {
+      ctx.save()
+      ctx.font = font
+      const words = text.split(/\s+/).filter(Boolean)
+      const lines: string[] = []
+      let line = ""
+
+      for (const word of words) {
+        const nextLine = line ? `${line} ${word}` : word
+        if (ctx.measureText(nextLine).width <= maxWidth || !line) {
+          line = nextLine
+        } else {
+          lines.push(line)
+          line = word
+        }
+        if (lines.length === maxLines) break
+      }
+      if (line && lines.length < maxLines) lines.push(line)
+
+      if (words.length && lines.length === maxLines) {
+        let consumed = lines.join(" ").split(/\s+/).length
+        if (consumed < words.length) {
+          let lastLine = lines[maxLines - 1]
+          while (lastLine && ctx.measureText(`${lastLine}...`).width > maxWidth) {
+            lastLine = lastLine.split(" ").slice(0, -1).join(" ")
+            consumed -= 1
+          }
+          lines[maxLines - 1] = lastLine ? `${lastLine}...` : "..."
+        }
+      }
+
+      ctx.restore()
+      return lines
     }
 
     function drawArrow(

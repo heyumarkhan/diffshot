@@ -12,8 +12,15 @@ export interface CanvasPreviewHandle {
   exportPNG: () => Promise<void>
 }
 
-function scaleToFit(imgW: number, imgH: number, boxW: number, boxH: number, vAlign: "top" | "center" | "bottom" = "center") {
-  const scale = Math.min(boxW / imgW, boxH / imgH)
+function scaleImage(
+  imgW: number,
+  imgH: number,
+  boxW: number,
+  boxH: number,
+  fit: "contain" | "cover",
+  vAlign: "top" | "center" | "bottom"
+) {
+  const scale = fit === "cover" ? Math.max(boxW / imgW, boxH / imgH) : Math.min(boxW / imgW, boxH / imgH)
   const renderedH = imgH * scale
   const offsetY = vAlign === "top" ? 0 : vAlign === "bottom" ? boxH - renderedH : (boxH - renderedH) / 2
   return {
@@ -50,7 +57,7 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
       ctx.imageSmoothingQuality = "high"
       ctx.clearRect(0, 0, exportW, exportH)
 
-      const PAD = Math.round(exportW * 0.04)
+      const PAD = Math.round(Math.min(exportW, exportH) * (state.canvasPadding / 100))
       const GAP = Math.round(exportW * 0.065)
       const hasLabel = state.labelPosition !== "hidden"
       const LABEL_H = hasLabel ? Math.round(state.labelFontSize * 1.8) : 0
@@ -83,6 +90,11 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
         return Math.min(img.height * (panelW / img.width), maxH)
       }
 
+      function panelImageH(img: HTMLImageElement | null, panelW: number, maxH: number): number {
+        if (state.imageFitMode === "cover") return maxH
+        return naturalH(img, panelW, maxH)
+      }
+
       // Helper: center a content block (labelZone + gap + image) vertically in availH
       function centerBlock(imgH: number): { imgY: number; labelY: number } {
         const totalH = (hasLabel ? LABEL_ZONE + scaledGap : 0) + imgH
@@ -97,17 +109,17 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
         return { imgY: startY, labelY: startY + imgH + scaledGap }
       }
 
-      const onlyBeforeImage = beforeImg && !afterImg
-      const onlyAfterImage = afterImg && !beforeImg
-      const layout = onlyBeforeImage ? "before-only" : onlyAfterImage ? "after-only" : state.layout
+      const canCompare = !!(beforeImg && afterImg)
+      const compareLayout = state.layout === "stacked" || state.layout === "spotlight" ? state.layout : "side-by-side"
+      const layout = state.mode === "compare" && canCompare ? compareLayout : "single"
 
       if (layout === "side-by-side") {
         const panelW = Math.floor((availW - GAP) / 2)
         const maxImgH = availH - (hasLabel ? LABEL_ZONE + scaledGap : 0)
         const imgH = Math.min(
           Math.max(
-            naturalH(beforeImg, panelW, maxImgH),
-            naturalH(afterImg, panelW, maxImgH)
+            panelImageH(beforeImg, panelW, maxImgH),
+            panelImageH(afterImg, panelW, maxImgH)
           ),
           maxImgH
         )
@@ -129,8 +141,8 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
         const maxImgH = Math.floor((availH - GAP - (hasLabel ? (LABEL_ZONE + scaledGap) * 2 : 0)) / 2)
         const imgH = Math.min(
           Math.max(
-            naturalH(beforeImg, panelW, maxImgH),
-            naturalH(afterImg, panelW, maxImgH)
+            panelImageH(beforeImg, panelW, maxImgH),
+            panelImageH(afterImg, panelW, maxImgH)
           ),
           maxImgH
         )
@@ -167,13 +179,13 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
           drawLabel(ctx, state.afterLabel, state.afterSublabel, bigX + bigW / 2, PAD + 8, state)
         }
 
-      } else if (layout === "before-only" || layout === "after-only") {
-        const img = layout === "before-only" ? beforeImg : afterImg
-        const lbl = layout === "before-only" ? state.beforeLabel : state.afterLabel
-        const sub = layout === "before-only" ? state.beforeSublabel : state.afterSublabel
+      } else if (layout === "single") {
+        const img = beforeImg || afterImg
+        const lbl = beforeImg ? state.beforeLabel : state.afterLabel
+        const sub = beforeImg ? state.beforeSublabel : state.afterSublabel
         const panelW = availW
         const maxImgH = availH - (hasLabel ? LABEL_ZONE + scaledGap : 0)
-        const imgH = naturalH(img, panelW, maxImgH)
+        const imgH = panelImageH(img, panelW, maxImgH)
         const { imgY, labelY } = centerBlock(imgH)
         await drawImagePanel(ctx, img, PAD, imgY, panelW, imgH, state)
         if (hasLabel) {
@@ -210,7 +222,7 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
         return
       }
 
-      const { scale, offsetX, offsetY } = scaleToFit(img.width, img.height, w, h, "top")
+      const { scale, offsetX, offsetY } = scaleImage(img.width, img.height, w, h, s.imageFitMode, s.imageVAlign)
 
       ctx.save()
 
@@ -229,6 +241,12 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
       if (s.frameStyle === "rounded" && s.borderRadius > 0) {
         ctx.beginPath()
         ctx.roundRect(imgX, imgY, imgW, imgH, s.borderRadius)
+        ctx.clip()
+      }
+
+      if (s.imageFitMode === "cover") {
+        ctx.beginPath()
+        ctx.rect(x, y, w, h)
         ctx.clip()
       }
 

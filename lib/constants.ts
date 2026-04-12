@@ -15,7 +15,12 @@ export const GRADIENT_PRESETS = [
 ] as const
 
 export const DEFAULT_STATE = {
+  mode: "single" as "single" | "compare",
   layout: "side-by-side" as "side-by-side" | "stacked" | "spotlight" | "before-only" | "after-only",
+  canvasPadding: 4,
+  imageFitMode: "contain" as "contain" | "cover",
+  imageVAlign: "center" as "top" | "center" | "bottom",
+  presetId: "clean" as string,
   beforeLabel: "SCREENSHOT",
   beforeSublabel: "",
   afterLabel: "SECOND SHOT",

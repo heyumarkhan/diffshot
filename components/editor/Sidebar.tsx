@@ -1,6 +1,7 @@
 "use client"
 
 import { EditorState, EXPORT_SIZES, GRADIENT_PRESETS } from "@/lib/constants"
+import { EDITOR_PRESETS } from "@/lib/presets"
 import { SectionLabel } from "@/components/ui/SectionLabel"
 import { SegmentedControl } from "@/components/ui/SegmentedControl"
 import { Toggle } from "@/components/ui/Toggle"
@@ -12,83 +13,208 @@ interface SidebarProps {
 
 export function Sidebar({ state, onChange }: SidebarProps) {
   const hasBothImages = !!(state.beforeImage && state.afterImage)
-  const showArrowSection = hasBothImages && state.layout !== "before-only" && state.layout !== "after-only"
+  const isCompareMode = state.mode === "compare" && hasBothImages
+  const showArrowSection = isCompareMode
+  const singleLabel = state.beforeImage ? state.beforeLabel : state.afterLabel
+  const singleSublabel = state.beforeImage ? state.beforeSublabel : state.afterSublabel
+  const singleLabelKey = state.beforeImage ? "beforeLabel" : "afterLabel"
+  const singleSublabelKey = state.beforeImage ? "beforeSublabel" : "afterSublabel"
+
+  function update(partial: Partial<EditorState>) {
+    onChange({ ...partial, presetId: "custom" })
+  }
 
   return (
     <div className="space-y-6 pb-4">
 
-      {/* LAYOUT */}
+      {/* MODE */}
       <div>
-        <SectionLabel>Layout</SectionLabel>
+        <SectionLabel>Mode</SectionLabel>
         <div className="grid grid-cols-2 gap-2">
-          {([
-            { value: "side-by-side", label: "⇌ Side by Side" },
-            { value: "stacked", label: "⇅ Stacked" },
-            { value: "spotlight", label: "◎ Spotlight" },
-            { value: "before-only", label: "◧ Screenshot Only" },
-            { value: "after-only", label: "◨ Second Only" },
-          ] as const).map((opt) => (
+          <button
+            onClick={() => onChange({ mode: "single" })}
+            className={`px-3 py-2.5 rounded-lg text-xs font-medium border transition-colors text-left ${
+              state.mode === "single" || !hasBothImages
+                ? "bg-blue-600 text-white border-blue-600"
+                : "bg-white text-gray-600 border-gray-200 hover:border-blue-300"
+            }`}
+          >
+            Single
+          </button>
+          <button
+            onClick={() => hasBothImages && onChange({ mode: "compare" })}
+            disabled={!hasBothImages}
+            className={`px-3 py-2.5 rounded-lg text-xs font-medium border transition-colors text-left ${
+              isCompareMode
+                ? "bg-blue-600 text-white border-blue-600"
+                : hasBothImages
+                  ? "bg-white text-gray-600 border-gray-200 hover:border-blue-300"
+                  : "bg-gray-50 text-gray-300 border-gray-200 cursor-not-allowed"
+            }`}
+          >
+            Compare
+          </button>
+        </div>
+        {!hasBothImages && (
+          <p className="text-xs text-gray-400 mt-2">Add a second screenshot to enable compare mode.</p>
+        )}
+      </div>
+
+      {/* PRESETS */}
+      <div>
+        <SectionLabel>Presets</SectionLabel>
+        <div className="grid grid-cols-3 gap-2">
+          {EDITOR_PRESETS.map((preset) => (
             <button
-              key={opt.value}
-              onClick={() => onChange({ layout: opt.value })}
+              key={preset.id}
+              onClick={() => onChange(preset.settings)}
               className={`px-3 py-2.5 rounded-lg text-xs font-medium border transition-colors text-left ${
-                state.layout === opt.value
+                state.presetId === preset.id
                   ? "bg-blue-600 text-white border-blue-600"
                   : "bg-white text-gray-600 border-gray-200 hover:border-blue-300"
               }`}
             >
-              {opt.label}
+              {preset.name}
             </button>
           ))}
         </div>
       </div>
 
+      {/* QUICK EDITS */}
+      <div>
+        <SectionLabel>Quick Edits</SectionLabel>
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs text-gray-500 mb-1 block">Canvas Padding: {state.canvasPadding}%</label>
+            <input
+              type="range"
+              min={0}
+              max={14}
+              value={state.canvasPadding}
+              onChange={(e) => update({ canvasPadding: Number(e.target.value) })}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 mb-1 block">Image Fit</label>
+            <SegmentedControl
+              options={[
+                { value: "contain", label: "Contain" },
+                { value: "cover", label: "Cover" },
+              ]}
+              value={state.imageFitMode}
+              onChange={(val) => update({ imageFitMode: val })}
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 mb-1 block">Vertical Align</label>
+            <SegmentedControl
+              options={[
+                { value: "top", label: "Top" },
+                { value: "center", label: "Center" },
+                { value: "bottom", label: "Bottom" },
+              ]}
+              value={state.imageVAlign}
+              onChange={(val) => update({ imageVAlign: val })}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* LAYOUT */}
+      {isCompareMode && (
+        <div>
+          <SectionLabel>Compare Layout</SectionLabel>
+          <div className="grid grid-cols-2 gap-2">
+            {([
+              { value: "side-by-side", label: "⇌ Side by Side" },
+              { value: "stacked", label: "⇅ Stacked" },
+              { value: "spotlight", label: "◎ Spotlight" },
+            ] as const).map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => onChange({ layout: opt.value })}
+                className={`px-3 py-2.5 rounded-lg text-xs font-medium border transition-colors text-left ${
+                  state.layout === opt.value
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-gray-600 border-gray-200 hover:border-blue-300"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* LABELS */}
       <div>
         <SectionLabel>Labels</SectionLabel>
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            <div>
+          {isCompareMode ? (
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Screenshot Label</label>
+                  <input
+                    type="text"
+                    value={state.beforeLabel}
+                    onChange={(e) => onChange({ beforeLabel: e.target.value })}
+                    className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Second Label</label>
+                  <input
+                    type="text"
+                    value={state.afterLabel}
+                    onChange={(e) => onChange({ afterLabel: e.target.value })}
+                    className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Screenshot Sublabel</label>
+                  <input
+                    type="text"
+                    value={state.beforeSublabel}
+                    placeholder="e.g. Product Dashboard"
+                    onChange={(e) => onChange({ beforeSublabel: e.target.value })}
+                    className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Second Sublabel</label>
+                  <input
+                    type="text"
+                    value={state.afterSublabel}
+                    placeholder="e.g. Mobile View"
+                    onChange={(e) => onChange({ afterSublabel: e.target.value })}
+                    className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="grid grid-cols-1 gap-2">
               <label className="text-xs text-gray-500 mb-1 block">Screenshot Label</label>
               <input
                 type="text"
-                value={state.beforeLabel}
-                onChange={(e) => onChange({ beforeLabel: e.target.value })}
+                value={singleLabel}
+                onChange={(e) => onChange({ [singleLabelKey]: e.target.value })}
                 className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
-            </div>
-            <div>
-              <label className="text-xs text-gray-500 mb-1 block">Second Label</label>
+              <label className="text-xs text-gray-500 mt-2 mb-1 block">Screenshot Sublabel</label>
               <input
                 type="text"
-                value={state.afterLabel}
-                onChange={(e) => onChange({ afterLabel: e.target.value })}
-                className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-xs text-gray-500 mb-1 block">Screenshot Sublabel</label>
-              <input
-                type="text"
-                value={state.beforeSublabel}
+                value={singleSublabel}
                 placeholder="e.g. Product Dashboard"
-                onChange={(e) => onChange({ beforeSublabel: e.target.value })}
+                onChange={(e) => onChange({ [singleSublabelKey]: e.target.value })}
                 className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
-            <div>
-              <label className="text-xs text-gray-500 mb-1 block">Second Sublabel</label>
-              <input
-                type="text"
-                value={state.afterSublabel}
-                placeholder="e.g. Mobile View"
-                onChange={(e) => onChange({ afterSublabel: e.target.value })}
-                className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-          </div>
+          )}
           <div>
             <label className="text-xs text-gray-500 mb-1 block">Label Position</label>
             <SegmentedControl

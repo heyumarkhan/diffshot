@@ -7,6 +7,7 @@ interface UploadZoneProps {
   afterImage: File | null
   onBeforeUpload: (file: File) => void
   onAfterUpload: (file: File) => void
+  onSwapImages: () => void
 }
 
 function DropBox({
@@ -74,16 +75,33 @@ function DropBox({
   )
 }
 
-export function UploadZone({ beforeImage, afterImage, onBeforeUpload, onAfterUpload }: UploadZoneProps) {
+export function UploadZone({ beforeImage, afterImage, onBeforeUpload, onAfterUpload, onSwapImages }: UploadZoneProps) {
+  const hasBothImages = !!(beforeImage && afterImage)
+
   return (
     <div className="space-y-3">
-      <p className="text-sm font-medium text-gray-700">Upload your screenshot</p>
-      <div className="flex gap-3">
+      <div>
+        <p className="text-sm font-medium text-gray-700">Upload your screenshot</p>
+        <p className="text-xs text-gray-400 mt-0.5">Add a second only for comparisons.</p>
+      </div>
+      <div className="flex gap-3 relative">
         <DropBox label="SCREENSHOT" image={beforeImage} onUpload={onBeforeUpload} />
         <DropBox label="OPTIONAL SECOND" image={afterImage} onUpload={onAfterUpload} />
+        {hasBothImages && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              onSwapImages()
+            }}
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-600 shadow-sm hover:border-blue-300 hover:text-blue-600"
+          >
+            Swap
+          </button>
+        )}
       </div>
       {(beforeImage && !afterImage) && (
-        <p className="text-xs text-center text-blue-600">Add a second screenshot only if you want a comparison.</p>
+        <p className="text-xs text-center text-blue-600">Single-image exports work best with title, subtitle, and tag.</p>
       )}
     </div>
   )

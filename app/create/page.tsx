@@ -25,6 +25,7 @@ export default function CreatePage() {
             afterImage={state.afterImage}
             onBeforeUpload={(file) => updateState({ beforeImage: file })}
             onAfterUpload={(file) => updateState({ afterImage: file })}
+            onSwapImages={() => updateState({ beforeImage: state.afterImage, afterImage: state.beforeImage })}
           />
         </div>
         <div className="px-5 py-5">

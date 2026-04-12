@@ -6,6 +6,62 @@ import { SectionLabel } from "@/components/ui/SectionLabel"
 import { SegmentedControl } from "@/components/ui/SegmentedControl"
 import { Toggle } from "@/components/ui/Toggle"
 
+const CONTENT_STARTERS = [
+  {
+    id: "launch",
+    label: "Launch",
+    settings: {
+      title: "Launch day is live",
+      subtitle: "The fastest path from screenshot to polished product update.",
+      badge: "NEW",
+      beforeLabel: "PRODUCT",
+      beforeSublabel: "Launch view",
+      afterLabel: "SECOND SHOT",
+      afterSublabel: "",
+      labelPosition: "above",
+      exportSize: "linkedin",
+    },
+  },
+  {
+    id: "update",
+    label: "Update",
+    settings: {
+      title: "A sharper workflow for teams",
+      subtitle: "Small product improvements worth sharing this week.",
+      badge: "UPDATE",
+      beforeLabel: "SCREENSHOT",
+      beforeSublabel: "Product update",
+      afterLabel: "SECOND SHOT",
+      afterSublabel: "",
+      labelPosition: "below",
+      exportSize: "twitter",
+    },
+  },
+  {
+    id: "compare",
+    label: "Compare",
+    compareOnly: true,
+    settings: {
+      mode: "compare",
+      layout: "side-by-side",
+      title: "Before and after",
+      subtitle: "A clearer product experience in one frame.",
+      badge: "IMPROVED",
+      beforeLabel: "BEFORE",
+      beforeSublabel: "Old flow",
+      afterLabel: "AFTER",
+      afterSublabel: "New flow",
+      labelPosition: "above",
+      exportSize: "linkedin",
+    },
+  },
+] satisfies {
+  id: string
+  label: string
+  compareOnly?: boolean
+  settings: Partial<EditorState>
+}[]
+
 interface SidebarProps {
   state: EditorState
   onChange: (partial: Partial<EditorState>) => void
@@ -98,6 +154,31 @@ export function Sidebar({ state, onChange }: SidebarProps) {
             />
           </div>
           <p className="text-xs text-gray-400">Fixed above the image. Keep it short.</p>
+          <div>
+            <label className="text-xs text-gray-500 mb-1.5 block">Starter Copy</label>
+            <div className="grid grid-cols-3 gap-2">
+              {CONTENT_STARTERS.map((starter) => {
+                const disabled = starter.compareOnly && !hasBothImages
+
+                return (
+                  <button
+                    key={starter.id}
+                    type="button"
+                    onClick={() => !disabled && onChange(starter.settings)}
+                    disabled={disabled}
+                    className={`px-3 py-2.5 rounded-lg text-xs font-medium border transition-colors text-left ${
+                      disabled
+                        ? "bg-gray-50 text-gray-300 border-gray-200 cursor-not-allowed"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:text-blue-600"
+                    }`}
+                  >
+                    {starter.label}
+                  </button>
+                )
+              })}
+            </div>
+            <p className="text-xs text-gray-400 mt-2">Start from a launch, update, or before-after story and edit the words.</p>
+          </div>
         </div>
       </div>
 

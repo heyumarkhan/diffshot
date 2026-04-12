@@ -1,6 +1,7 @@
 "use client"
 
 // Metadata is in a separate server component — see layout for base metadata
+import Link from "next/link"
 import { useRef, useState } from "react"
 import { useEditorState } from "@/hooks/useEditorState"
 import { UploadZone } from "@/components/editor/UploadZone"
@@ -13,7 +14,7 @@ export default function CreatePage() {
   const canvasRef = useRef<CanvasPreviewHandle>(null)
   const [mobileTab, setMobileTab] = useState<"controls" | "preview">("controls")
 
-  const hasImages = !!(state.beforeImage && state.afterImage)
+  const hasImage = !!(state.beforeImage || state.afterImage)
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
@@ -27,11 +28,11 @@ export default function CreatePage() {
           />
         </div>
         <div className="px-5 py-5">
-          {hasImages ? (
+          {hasImage ? (
             <Sidebar state={state} onChange={updateState} />
           ) : (
             <div className="text-center py-8 text-gray-400">
-              <p className="text-sm">Upload both screenshots above to unlock styling controls</p>
+              <p className="text-sm">Upload a screenshot above to unlock styling controls</p>
             </div>
           )}
         </div>
@@ -41,25 +42,25 @@ export default function CreatePage() {
 
   const floatingDownload = (
     <div className="fixed bottom-6 left-0 w-[400px] px-5 z-50 hidden md:block">
-      <ExportButton canvasRef={canvasRef} disabled={!hasImages} />
+      <ExportButton canvasRef={canvasRef} disabled={!hasImage} />
     </div>
   )
 
   const mobileFloatingDownload = (
     <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden">
-      <ExportButton canvasRef={canvasRef} disabled={!hasImages} />
+      <ExportButton canvasRef={canvasRef} disabled={!hasImage} />
     </div>
   )
 
   return (
     <>
-      {/* ── DESKTOP LAYOUT (md and above) ── */}
+      {/* Desktop layout (md and above) */}
       <div className="hidden md:flex h-screen overflow-hidden bg-gray-50">
         <div className="w-[400px] flex-shrink-0 border-r border-gray-200 bg-white flex flex-col">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
-            <a href="/" className="flex items-center gap-2 text-blue-600 font-bold hover:text-blue-700">
+            <Link href="/" className="flex items-center gap-2 text-blue-600 font-bold hover:text-blue-700">
               <span>✦</span><span>GleamShot</span>
-            </a>
+            </Link>
             <span className="text-xs text-gray-400">Free · No login</span>
           </div>
           {sidebarContent}
@@ -70,13 +71,13 @@ export default function CreatePage() {
       </div>
       {floatingDownload}
 
-      {/* ── MOBILE LAYOUT (below md) ── */}
+      {/* Mobile layout (below md) */}
       <div className="flex flex-col h-screen overflow-hidden bg-gray-50 md:hidden">
         {/* Mobile header */}
         <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 flex-shrink-0">
-          <a href="/" className="flex items-center gap-1.5 font-bold text-blue-600">
+          <Link href="/" className="flex items-center gap-1.5 font-bold text-blue-600">
             <span>✦</span><span>GleamShot</span>
-          </a>
+          </Link>
           <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs font-medium">
             <button
               onClick={() => setMobileTab("controls")}

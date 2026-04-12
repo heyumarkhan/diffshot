@@ -11,7 +11,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ state, onChange }: SidebarProps) {
-  const showArrowSection = state.layout !== "before-only" && state.layout !== "after-only"
+  const hasBothImages = !!(state.beforeImage && state.afterImage)
+  const showArrowSection = hasBothImages && state.layout !== "before-only" && state.layout !== "after-only"
 
   return (
     <div className="space-y-6 pb-4">
@@ -24,8 +25,8 @@ export function Sidebar({ state, onChange }: SidebarProps) {
             { value: "side-by-side", label: "⇌ Side by Side" },
             { value: "stacked", label: "⇅ Stacked" },
             { value: "spotlight", label: "◎ Spotlight" },
-            { value: "before-only", label: "◧ Before Only" },
-            { value: "after-only", label: "◨ After Only" },
+            { value: "before-only", label: "◧ Screenshot Only" },
+            { value: "after-only", label: "◨ Second Only" },
           ] as const).map((opt) => (
             <button
               key={opt.value}
@@ -48,7 +49,7 @@ export function Sidebar({ state, onChange }: SidebarProps) {
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Before Label</label>
+              <label className="text-xs text-gray-500 mb-1 block">Screenshot Label</label>
               <input
                 type="text"
                 value={state.beforeLabel}
@@ -57,7 +58,7 @@ export function Sidebar({ state, onChange }: SidebarProps) {
               />
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">After Label</label>
+              <label className="text-xs text-gray-500 mb-1 block">Second Label</label>
               <input
                 type="text"
                 value={state.afterLabel}
@@ -68,21 +69,21 @@ export function Sidebar({ state, onChange }: SidebarProps) {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Before Sublabel</label>
+              <label className="text-xs text-gray-500 mb-1 block">Screenshot Sublabel</label>
               <input
                 type="text"
                 value={state.beforeSublabel}
-                placeholder="e.g. Old Dashboard"
+                placeholder="e.g. Product Dashboard"
                 onChange={(e) => onChange({ beforeSublabel: e.target.value })}
                 className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">After Sublabel</label>
+              <label className="text-xs text-gray-500 mb-1 block">Second Sublabel</label>
               <input
                 type="text"
                 value={state.afterSublabel}
-                placeholder="e.g. Dashboard 2.0"
+                placeholder="e.g. Mobile View"
                 onChange={(e) => onChange({ afterSublabel: e.target.value })}
                 className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
               />

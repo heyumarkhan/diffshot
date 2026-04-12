@@ -104,18 +104,21 @@ export function Sidebar({ state, onChange }: SidebarProps) {
       {/* PRESETS */}
       <div>
         <SectionLabel>Presets</SectionLabel>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="space-y-2">
           {EDITOR_PRESETS.map((preset) => (
             <button
               key={preset.id}
               onClick={() => onChange(preset.settings)}
-              className={`px-3 py-2.5 rounded-lg text-xs font-medium border transition-colors text-left ${
+              className={`w-full px-3 py-2.5 rounded-lg border transition-colors text-left ${
                 state.presetId === preset.id
                   ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-blue-300"
+                  : "bg-white text-gray-700 border-gray-200 hover:border-blue-300"
               }`}
             >
-              {preset.name}
+              <span className="block text-xs font-semibold">{preset.name}</span>
+              <span className={`mt-0.5 block text-xs ${state.presetId === preset.id ? "text-blue-100" : "text-gray-400"}`}>
+                {preset.description}
+              </span>
             </button>
           ))}
         </div>
@@ -176,7 +179,7 @@ export function Sidebar({ state, onChange }: SidebarProps) {
               ] as const).map((opt) => (
                 <button
                   key={opt.value}
-                  onClick={() => onChange({ layout: opt.value })}
+                  onClick={() => update({ layout: opt.value })}
                   className={`px-3 py-2.5 rounded-lg text-xs font-medium border transition-colors text-left ${
                     state.layout === opt.value
                       ? "bg-blue-600 text-white border-blue-600"
@@ -269,7 +272,7 @@ export function Sidebar({ state, onChange }: SidebarProps) {
                 { value: "hidden", label: "Hidden" },
               ]}
               value={state.labelPosition}
-              onChange={(val) => onChange({ labelPosition: val })}
+              onChange={(val) => update({ labelPosition: val })}
             />
           </div>
           <div>
@@ -279,7 +282,7 @@ export function Sidebar({ state, onChange }: SidebarProps) {
               min={12}
               max={48}
               value={state.labelFontSize}
-              onChange={(e) => onChange({ labelFontSize: Number(e.target.value) })}
+              onChange={(e) => update({ labelFontSize: Number(e.target.value) })}
               className="w-full"
             />
           </div>
@@ -290,7 +293,7 @@ export function Sidebar({ state, onChange }: SidebarProps) {
               min={0}
               max={48}
               value={state.labelGap}
-              onChange={(e) => onChange({ labelGap: Number(e.target.value) })}
+              onChange={(e) => update({ labelGap: Number(e.target.value) })}
               className="w-full"
             />
           </div>
@@ -299,7 +302,7 @@ export function Sidebar({ state, onChange }: SidebarProps) {
             <input
               type="color"
               value={state.labelColor}
-              onChange={(e) => onChange({ labelColor: e.target.value })}
+              onChange={(e) => update({ labelColor: e.target.value })}
               className="h-9 w-full rounded-md border border-gray-200 p-1 cursor-pointer"
             />
           </div>
@@ -313,7 +316,7 @@ export function Sidebar({ state, onChange }: SidebarProps) {
           <div className="space-y-3">
             <Toggle
               checked={state.showArrow}
-              onChange={(val) => onChange({ showArrow: val })}
+              onChange={(val) => update({ showArrow: val })}
               label="Show Arrow"
             />
             {state.showArrow && (
@@ -327,7 +330,7 @@ export function Sidebar({ state, onChange }: SidebarProps) {
                       { value: "double", label: "Double" },
                     ]}
                     value={state.arrowStyle}
-                    onChange={(val) => onChange({ arrowStyle: val })}
+                    onChange={(val) => update({ arrowStyle: val })}
                   />
                 </div>
                 <div>
@@ -335,7 +338,7 @@ export function Sidebar({ state, onChange }: SidebarProps) {
                   <input
                     type="color"
                     value={state.arrowColor}
-                    onChange={(e) => onChange({ arrowColor: e.target.value })}
+                    onChange={(e) => update({ arrowColor: e.target.value })}
                     className="h-9 w-full rounded-md border border-gray-200 p-1 cursor-pointer"
                   />
                 </div>
@@ -348,7 +351,7 @@ export function Sidebar({ state, onChange }: SidebarProps) {
                       { value: "large", label: "Large" },
                     ]}
                     value={state.arrowSize}
-                    onChange={(val) => onChange({ arrowSize: val })}
+                    onChange={(val) => update({ arrowSize: val })}
                   />
                 </div>
               </>
@@ -368,13 +371,13 @@ export function Sidebar({ state, onChange }: SidebarProps) {
               { value: "transparent", label: "None" },
             ]}
             value={state.backgroundType}
-            onChange={(val) => onChange({ backgroundType: val })}
+            onChange={(val) => update({ backgroundType: val })}
           />
           {state.backgroundType === "solid" && (
             <input
               type="color"
               value={state.backgroundColor}
-              onChange={(e) => onChange({ backgroundColor: e.target.value })}
+              onChange={(e) => update({ backgroundColor: e.target.value })}
               className="h-9 w-full rounded-md border border-gray-200 p-1 cursor-pointer"
             />
           )}
@@ -384,7 +387,7 @@ export function Sidebar({ state, onChange }: SidebarProps) {
                 {GRADIENT_PRESETS.map((preset, i) => (
                   <button
                     key={i}
-                    onClick={() => onChange({ gradientPresetIndex: i, gradientStart: preset.start, gradientEnd: preset.end })}
+                    onClick={() => update({ gradientPresetIndex: i, gradientStart: preset.start, gradientEnd: preset.end })}
                     title={preset.name}
                     className={`h-9 rounded-lg border-2 transition-all ${
                       state.gradientPresetIndex === i ? "border-blue-500 scale-105" : "border-transparent"
@@ -399,7 +402,7 @@ export function Sidebar({ state, onChange }: SidebarProps) {
                   <input
                     type="color"
                     value={state.gradientStart}
-                    onChange={(e) => onChange({ gradientStart: e.target.value, gradientPresetIndex: -1 })}
+                    onChange={(e) => update({ gradientStart: e.target.value, gradientPresetIndex: -1 })}
                     className="h-8 w-full rounded border border-gray-200 p-0.5 cursor-pointer"
                   />
                 </div>
@@ -408,7 +411,7 @@ export function Sidebar({ state, onChange }: SidebarProps) {
                   <input
                     type="color"
                     value={state.gradientEnd}
-                    onChange={(e) => onChange({ gradientEnd: e.target.value, gradientPresetIndex: -1 })}
+                    onChange={(e) => update({ gradientEnd: e.target.value, gradientPresetIndex: -1 })}
                     className="h-8 w-full rounded border border-gray-200 p-0.5 cursor-pointer"
                   />
                 </div>
@@ -430,7 +433,7 @@ export function Sidebar({ state, onChange }: SidebarProps) {
               { value: "rounded", label: "Rounded" },
             ]}
             value={state.frameStyle}
-            onChange={(val) => onChange({ frameStyle: val })}
+            onChange={(val) => update({ frameStyle: val })}
           />
           {state.frameStyle === "rounded" && (
             <div>
@@ -440,7 +443,7 @@ export function Sidebar({ state, onChange }: SidebarProps) {
                 min={0}
                 max={24}
                 value={state.borderRadius}
-                onChange={(e) => onChange({ borderRadius: Number(e.target.value) })}
+                onChange={(e) => update({ borderRadius: Number(e.target.value) })}
                 className="w-full"
               />
             </div>
@@ -455,10 +458,41 @@ export function Sidebar({ state, onChange }: SidebarProps) {
                   { value: "strong", label: "Strong" },
                 ]}
                 value={state.shadowIntensity}
-                onChange={(val) => onChange({ shadowIntensity: val })}
+                onChange={(val) => update({ shadowIntensity: val })}
               />
             </div>
           )}
+          <div className="pt-1 space-y-3">
+            <Toggle
+              checked={state.borderEnabled}
+              onChange={(val) => update({ borderEnabled: val })}
+              label="Add border"
+            />
+            {state.borderEnabled && (
+              <div className="grid grid-cols-[1fr_72px] gap-3 items-end">
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Border Width: {state.borderWidth}px</label>
+                  <input
+                    type="range"
+                    min={1}
+                    max={8}
+                    value={state.borderWidth}
+                    onChange={(e) => update({ borderWidth: Number(e.target.value) })}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Color</label>
+                  <input
+                    type="color"
+                    value={state.borderColor}
+                    onChange={(e) => update({ borderColor: e.target.value })}
+                    className="h-9 w-full rounded-md border border-gray-200 p-1 cursor-pointer"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

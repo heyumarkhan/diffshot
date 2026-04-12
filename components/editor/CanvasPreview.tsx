@@ -236,6 +236,11 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
       const imgY = y + offsetY
       const imgW = img.width * scale
       const imgH = img.height * scale
+      const frameX = s.imageFitMode === "cover" ? x : imgX
+      const frameY = s.imageFitMode === "cover" ? y : imgY
+      const frameW = s.imageFitMode === "cover" ? w : imgW
+      const frameH = s.imageFitMode === "cover" ? h : imgH
+      const frameRadius = s.frameStyle === "rounded" ? s.borderRadius : 0
 
       if (s.frameStyle === "shadow") {
         const blur = s.shadowIntensity === "light" ? 8 : s.shadowIntensity === "strong" ? 24 : 14
@@ -246,7 +251,7 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
 
       if (s.frameStyle === "rounded" && s.borderRadius > 0) {
         ctx.beginPath()
-        ctx.roundRect(imgX, imgY, imgW, imgH, s.borderRadius)
+        ctx.roundRect(frameX, frameY, frameW, frameH, s.borderRadius)
         ctx.clip()
       }
 
@@ -276,6 +281,31 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
       ctx.imageSmoothingEnabled = true
       ctx.imageSmoothingQuality = "high"
       ctx.drawImage(img, imgX, imgY, imgW, imgH)
+
+      if (s.borderEnabled && s.borderWidth > 0) {
+        const inset = s.borderWidth / 2
+        ctx.shadowColor = "transparent"
+        ctx.lineWidth = s.borderWidth
+        ctx.strokeStyle = s.borderColor
+        ctx.beginPath()
+        if (frameRadius > 0) {
+          ctx.roundRect(
+            frameX + inset,
+            frameY + inset,
+            Math.max(0, frameW - s.borderWidth),
+            Math.max(0, frameH - s.borderWidth),
+            Math.max(0, frameRadius - inset)
+          )
+        } else {
+          ctx.rect(
+            frameX + inset,
+            frameY + inset,
+            Math.max(0, frameW - s.borderWidth),
+            Math.max(0, frameH - s.borderWidth)
+          )
+        }
+        ctx.stroke()
+      }
       ctx.restore()
     }
 

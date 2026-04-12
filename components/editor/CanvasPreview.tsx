@@ -9,7 +9,7 @@ interface CanvasPreviewProps {
 }
 
 export interface CanvasPreviewHandle {
-  exportPNG: () => Promise<void>
+  exportPNG: (filename?: string) => Promise<void>
 }
 
 function scaleImage(
@@ -500,14 +500,14 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
     }
 
     useImperativeHandle(ref, () => ({
-      async exportPNG() {
+      async exportPNG(filename = "gleamshot.png") {
         const canvas = canvasEl.current
         if (!canvas) return
         // Canvas is already rendered at full export dimensions — just export it
         const url = canvas.toDataURL("image/png", 1.0)
         const a = document.createElement("a")
         a.href = url
-        a.download = "gleamshot.png"
+        a.download = filename
         a.click()
       },
     }))

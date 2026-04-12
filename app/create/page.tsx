@@ -43,13 +43,13 @@ export default function CreatePage() {
 
   const floatingDownload = (
     <div className="fixed bottom-6 left-0 w-[400px] px-5 z-50 hidden md:block">
-      <ExportButton canvasRef={canvasRef} disabled={!hasImage} />
+      <ExportButton canvasRef={canvasRef} disabled={!hasImage} state={state} />
     </div>
   )
 
   const mobileFloatingDownload = (
     <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden">
-      <ExportButton canvasRef={canvasRef} disabled={!hasImage} />
+      <ExportButton canvasRef={canvasRef} disabled={!hasImage} state={state} />
     </div>
   )
 

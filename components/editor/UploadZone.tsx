@@ -1,26 +1,46 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 interface UploadZoneProps {
   beforeImage: File | null
   afterImage: File | null
   onBeforeUpload: (file: File) => void
   onAfterUpload: (file: File) => void
+  onBeforeRemove: () => void
+  onAfterRemove: () => void
   onSwapImages: () => void
+  onClearAll: () => void
+}
+
+function useObjectUrl(file: File | null) {
+  const url = useMemo(() => (file ? URL.createObjectURL(file) : null), [file])
+
+  useEffect(() => {
+    return () => {
+      if (url) URL.revokeObjectURL(url)
+    }
+  }, [url])
+
+  return url
 }
 
 function DropBox({
   label,
+  helper,
   image,
   onUpload,
+  onRemove,
 }: {
   label: string
+  helper: string
   image: File | null
   onUpload: (file: File) => void
+  onRemove: () => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
+  const preview = useObjectUrl(image)
 
   function handleFile(file: File) {
     if (!file.type.startsWith("image/")) return
@@ -37,8 +57,6 @@ function DropBox({
     const file = e.dataTransfer.files[0]
     if (file) handleFile(file)
   }
-
-  const preview = image ? URL.createObjectURL(image) : null
 
   return (
     <div
@@ -59,15 +77,28 @@ function DropBox({
       />
       {preview ? (
         <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={preview} alt={label} className="h-[80px] max-w-full rounded-md object-contain shadow-sm flex-shrink-0" />
           <p className="text-xs text-gray-500 truncate max-w-full px-2 text-center">{image?.name}</p>
-          <span className="text-xs text-blue-600 font-medium">Click to change</span>
+          <div className="flex items-center gap-2 text-xs font-medium">
+            <span className="text-blue-600">Change</span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onRemove()
+              }}
+              className="text-gray-400 hover:text-red-500"
+            >
+              Remove
+            </button>
+          </div>
         </>
       ) : (
         <>
           <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-lg flex-shrink-0">+</div>
           <p className="text-sm font-semibold text-gray-600">{label}</p>
-          <p className="text-xs text-gray-400">Drop or click</p>
+          <p className="text-xs text-gray-400">{helper}</p>
           <p className="text-xs text-gray-300">PNG, JPG, WebP</p>
         </>
       )}
@@ -75,18 +106,51 @@ function DropBox({
   )
 }
 
-export function UploadZone({ beforeImage, afterImage, onBeforeUpload, onAfterUpload, onSwapImages }: UploadZoneProps) {
+export function UploadZone({
+  beforeImage,
+  afterImage,
+  onBeforeUpload,
+  onAfterUpload,
+  onBeforeRemove,
+  onAfterRemove,
+  onSwapImages,
+  onClearAll,
+}: UploadZoneProps) {
   const hasBothImages = !!(beforeImage && afterImage)
+  const hasAnyImage = !!(beforeImage || afterImage)
 
   return (
     <div className="space-y-3">
-      <div>
-        <p className="text-sm font-medium text-gray-700">Upload your screenshot</p>
-        <p className="text-xs text-gray-400 mt-0.5">Add a second only for comparisons.</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-gray-700">Upload your screenshot</p>
+          <p className="text-xs text-gray-400 mt-0.5">Start with one image. Add a second only for before-after posts.</p>
+        </div>
+        {hasAnyImage && (
+          <button
+            type="button"
+            onClick={onClearAll}
+            className="rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-500 hover:border-red-200 hover:text-red-500"
+          >
+            Clear all
+          </button>
+        )}
       </div>
       <div className="flex gap-3 relative">
-        <DropBox label="SCREENSHOT" image={beforeImage} onUpload={onBeforeUpload} />
-        <DropBox label="OPTIONAL SECOND" image={afterImage} onUpload={onAfterUpload} />
+        <DropBox
+          label="SCREENSHOT"
+          helper="Drop or click"
+          image={beforeImage}
+          onUpload={onBeforeUpload}
+          onRemove={onBeforeRemove}
+        />
+        <DropBox
+          label="OPTIONAL SECOND"
+          helper="Before-after only"
+          image={afterImage}
+          onUpload={onAfterUpload}
+          onRemove={onAfterRemove}
+        />
         {hasBothImages && (
           <button
             type="button"
@@ -101,7 +165,10 @@ export function UploadZone({ beforeImage, afterImage, onBeforeUpload, onAfterUpl
         )}
       </div>
       {(beforeImage && !afterImage) && (
-        <p className="text-xs text-center text-blue-600">Single-image exports work best with title, subtitle, and tag.</p>
+        <p className="text-xs text-center text-blue-600">Single-image exports now start with launch-ready copy you can edit below.</p>
+      )}
+      {hasBothImages && (
+        <p className="text-xs text-center text-blue-600">Compare mode is on. Use Swap if the story reads better in the other direction.</p>
       )}
     </div>
   )

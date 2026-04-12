@@ -16,5 +16,9 @@ export function useEditorState() {
     setState((prev) => ({ ...prev, ...partial }))
   }
 
-  return { state, setState, updateState }
+  function resetState() {
+    setState(initialState)
+  }
+
+  return { state, setState, updateState, resetState }
 }

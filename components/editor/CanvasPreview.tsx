@@ -97,7 +97,9 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
         return { imgY: startY, labelY: startY + imgH + scaledGap }
       }
 
-      const layout = state.layout
+      const onlyBeforeImage = beforeImg && !afterImg
+      const onlyAfterImage = afterImg && !beforeImg
+      const layout = onlyBeforeImage ? "before-only" : onlyAfterImage ? "after-only" : state.layout
 
       if (layout === "side-by-side") {
         const panelW = Math.floor((availW - GAP) / 2)
@@ -383,8 +385,8 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
       return (
         <div className="flex items-center justify-center h-full text-center text-gray-400">
           <div>
-            <div className="text-5xl mb-4">🖼️</div>
-            <p className="text-lg font-medium">Upload screenshots to see preview</p>
+            <div className="text-5xl mb-4">+</div>
+            <p className="text-lg font-medium">Upload a screenshot to see preview</p>
             <p className="text-sm mt-1">Your images never leave your browser</p>
           </div>
         </div>

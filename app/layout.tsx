@@ -10,24 +10,24 @@ export const icons = {
 }
 
 export const metadata: Metadata = {
-  title: "GleamShot — Beautiful Screenshot Tool for Makers",
+  title: "GleamShot — Fast Screenshot Polish Tool",
   description:
-    "Turn any screenshot into a polished, shareable visual in seconds. Free. No login. No uploads to any server. Built for founders, designers, and makers.",
+    "Turn one screenshot or a pair of screenshots into a polished, shareable visual in seconds. Free. No login. No uploads to any server.",
   metadataBase: new URL("https://gleamshot.io"),
   openGraph: {
-    title: "GleamShot — Beautiful Screenshots in Seconds",
-    description: "Turn any screenshot into a polished, shareable visual in seconds. Free. No login required.",
+    title: "GleamShot — Fast Screenshot Polish Tool",
+    description: "Turn one screenshot or a pair of screenshots into a polished, shareable visual in seconds. Free. No login required.",
     url: "https://gleamshot.io",
     siteName: "GleamShot",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "GleamShot — Beautiful Screenshots in Seconds",
-    description: "Turn any screenshot into a polished, shareable visual in seconds. Free. No login required.",
+    title: "GleamShot — Fast Screenshot Polish Tool",
+    description: "Turn one screenshot or a pair of screenshots into a polished, shareable visual in seconds. Free. No login required.",
     creator: "@umarkhan",
   },
-  keywords: ["screenshot tool", "before after screenshot", "screenshot beautifier", "screenshot framing", "makers tool"],
+  keywords: ["screenshot tool", "screenshot editor", "screenshot beautifier", "screenshot framing", "before after screenshot"],
 }
 
 export default function RootLayout({

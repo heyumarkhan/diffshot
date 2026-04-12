@@ -23,20 +23,20 @@ export default function Home() {
         <span className="text-xs text-gray-400 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">Free · No login</span>
       </nav>
 
-      {/* Hero — takes remaining height */}
+      {/* Hero - takes remaining height */}
       <section className="flex-1 flex flex-col items-center justify-center text-center px-6">
 
         <p className="text-blue-400 text-sm font-semibold uppercase tracking-widest mb-6">
-          Before &amp; After. 3 clicks.
+          Fast screenshot polish
         </p>
 
         <h1 className="text-5xl md:text-7xl font-black leading-[1.05] max-w-3xl mb-6 tracking-tight">
-          Stop wasting time<br />
-          <span className="text-blue-400">on a simple visual.</span>
+          Make screenshots<br />
+          <span className="text-blue-400">ready to share.</span>
         </h1>
 
         <p className="text-xl text-gray-400 max-w-lg mb-10">
-          Upload two screenshots. Download a polished Before/After PNG. No Canva. No Figma. No nonsense.
+          Upload one screenshot or two. Add clean framing, labels, backgrounds, and export a polished PNG in seconds.
         </p>
 
         <Link
@@ -52,12 +52,12 @@ export default function Home() {
         <div className="flex items-center gap-3 mt-12 text-sm text-gray-500">
           <span className="flex items-center gap-2">
             <span className="w-6 h-6 rounded-full bg-white/10 text-white text-xs flex items-center justify-center font-bold">1</span>
-            Upload Before
+            Upload Screenshot
           </span>
           <span className="text-gray-700">→</span>
           <span className="flex items-center gap-2">
             <span className="w-6 h-6 rounded-full bg-white/10 text-white text-xs flex items-center justify-center font-bold">2</span>
-            Upload After
+            Polish
           </span>
           <span className="text-gray-700">→</span>
           <span className="flex items-center gap-2">
@@ -70,7 +70,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-white/10 px-8 py-4 text-center text-gray-600 text-xs flex-shrink-0">
-        Made for founders. Free.
+        Made for quick product visuals. Free.
       </footer>
     </main>
   )

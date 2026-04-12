@@ -77,13 +77,13 @@ function DropBox({
 export function UploadZone({ beforeImage, afterImage, onBeforeUpload, onAfterUpload }: UploadZoneProps) {
   return (
     <div className="space-y-3">
-      <p className="text-sm font-medium text-gray-700">Upload your screenshots</p>
+      <p className="text-sm font-medium text-gray-700">Upload your screenshot</p>
       <div className="flex gap-3">
-        <DropBox label="BEFORE" image={beforeImage} onUpload={onBeforeUpload} />
-        <DropBox label="AFTER" image={afterImage} onUpload={onAfterUpload} />
+        <DropBox label="SCREENSHOT" image={beforeImage} onUpload={onBeforeUpload} />
+        <DropBox label="OPTIONAL SECOND" image={afterImage} onUpload={onAfterUpload} />
       </div>
       {(beforeImage && !afterImage) && (
-        <p className="text-xs text-center text-blue-600">Now upload your After screenshot to continue</p>
+        <p className="text-xs text-center text-blue-600">Add a second screenshot only if you want a comparison.</p>
       )}
     </div>
   )

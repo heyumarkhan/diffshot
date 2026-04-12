@@ -16,9 +16,9 @@ export const GRADIENT_PRESETS = [
 
 export const DEFAULT_STATE = {
   layout: "side-by-side" as "side-by-side" | "stacked" | "spotlight" | "before-only" | "after-only",
-  beforeLabel: "BEFORE",
+  beforeLabel: "SCREENSHOT",
   beforeSublabel: "",
-  afterLabel: "AFTER",
+  afterLabel: "SECOND SHOT",
   afterSublabel: "",
   labelPosition: "above" as "above" | "below" | "inside" | "hidden",
   labelFontSize: 28,

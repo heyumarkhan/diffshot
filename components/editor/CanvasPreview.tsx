@@ -533,10 +533,11 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
     if (!state.beforeImage && !state.afterImage) {
       return (
         <div className="flex items-center justify-center h-full text-center text-gray-400">
-          <div>
+          <div className="max-w-sm px-6">
             <div className="text-5xl mb-4">+</div>
-            <p className="text-lg font-medium">Upload a screenshot to see preview</p>
-            <p className="text-sm mt-1">Your images never leave your browser</p>
+            <p className="text-lg font-medium text-gray-600">Drop in one screenshot</p>
+            <p className="text-sm mt-1">GleamShot will add editable update copy and a share-ready frame.</p>
+            <p className="text-xs mt-3 text-gray-400">Add a second image only when you want a before-after comparison. Your images stay in this browser.</p>
           </div>
         </div>
       )

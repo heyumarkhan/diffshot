@@ -10,11 +10,65 @@ import { Sidebar } from "@/components/editor/Sidebar"
 import { ExportButton } from "@/components/editor/ExportButton"
 
 export default function CreatePage() {
-  const { state, updateState } = useEditorState()
+  const { state, updateState, resetState } = useEditorState()
   const canvasRef = useRef<CanvasPreviewHandle>(null)
   const [mobileTab, setMobileTab] = useState<"controls" | "preview">("controls")
 
   const hasImage = !!(state.beforeImage || state.afterImage)
+  const hasStarterCopy = !!(state.title || state.subtitle || state.badge)
+
+  function handleBeforeUpload(file: File) {
+    updateState({
+      beforeImage: file,
+      ...(!hasImage && !hasStarterCopy
+        ? {
+            title: "Product update",
+            subtitle: "A cleaner product moment, ready to share.",
+            badge: "UPDATE",
+            beforeLabel: "PRODUCT",
+            beforeSublabel: "Screenshot",
+          }
+        : {}),
+    })
+    setMobileTab("preview")
+  }
+
+  function handleAfterUpload(file: File) {
+    updateState({
+      afterImage: file,
+      ...(state.beforeImage
+        ? {
+            mode: "compare",
+            beforeLabel: "BEFORE",
+            afterLabel: "AFTER",
+            beforeSublabel: state.beforeSublabel || "Before",
+            afterSublabel: state.afterSublabel || "After",
+          }
+        : {}),
+    })
+    setMobileTab("preview")
+  }
+
+  function handleRemoveBefore() {
+    updateState({
+      beforeImage: null,
+      mode: state.afterImage ? "single" : state.mode,
+    })
+  }
+
+  function handleRemoveAfter() {
+    updateState({
+      afterImage: null,
+      mode: "single",
+    })
+  }
+
+  function handleClearAll() {
+    if (window.confirm("Clear both screenshots and reset the editor?")) {
+      resetState()
+      setMobileTab("controls")
+    }
+  }
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
@@ -23,8 +77,11 @@ export default function CreatePage() {
           <UploadZone
             beforeImage={state.beforeImage}
             afterImage={state.afterImage}
-            onBeforeUpload={(file) => updateState({ beforeImage: file })}
-            onAfterUpload={(file) => updateState({ afterImage: file })}
+            onBeforeUpload={handleBeforeUpload}
+            onAfterUpload={handleAfterUpload}
+            onBeforeRemove={handleRemoveBefore}
+            onAfterRemove={handleRemoveAfter}
+            onClearAll={handleClearAll}
             onSwapImages={() => updateState({ beforeImage: state.afterImage, afterImage: state.beforeImage })}
           />
         </div>

@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "GleamShot Capture",
+  "description": "Capture a selected area and open it in the GleamShot editor.",
+  "version": "0.1.0",
+  "permissions": ["activeTab", "storage", "tabs"],
+  "host_permissions": ["<all_urls>", "https://gleamshot.io/*", "http://localhost:3000/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Capture with GleamShot"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content-script.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

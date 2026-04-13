@@ -90,7 +90,7 @@
     fullButton.style.cssText = buttonBaseStyles("#3b82f6", "white", "0");
     fullButton.addEventListener("click", async (event) => {
       event.stopPropagation();
-      await captureVisibleTabAndOpenEditor();
+      await captureVisibleAreaSelection();
     });
 
     const cancelButton = document.createElement("button");
@@ -177,33 +177,6 @@
       setShadeRect(rect);
     }
 
-    function setShadeRect(rect) {
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-      const right = rect.x + rect.width;
-      const bottom = rect.y + rect.height;
-
-      shadeTop.style.left = "0px";
-      shadeTop.style.top = "0px";
-      shadeTop.style.width = `${viewportWidth}px`;
-      shadeTop.style.height = `${rect.y}px`;
-
-      shadeRight.style.left = `${right}px`;
-      shadeRight.style.top = `${rect.y}px`;
-      shadeRight.style.width = `${Math.max(0, viewportWidth - right)}px`;
-      shadeRight.style.height = `${rect.height}px`;
-
-      shadeBottom.style.left = "0px";
-      shadeBottom.style.top = `${bottom}px`;
-      shadeBottom.style.width = `${viewportWidth}px`;
-      shadeBottom.style.height = `${Math.max(0, viewportHeight - bottom)}px`;
-
-      shadeLeft.style.left = "0px";
-      shadeLeft.style.top = `${rect.y}px`;
-      shadeLeft.style.width = `${rect.x}px`;
-      shadeLeft.style.height = `${rect.height}px`;
-    }
-
     function getRect(currentX, currentY) {
       const x = Math.min(overlayState.startX, currentX);
       const y = Math.min(overlayState.startY, currentY);
@@ -222,6 +195,35 @@
       "will-change: left, top, width, height",
     ].join(";");
     return shade;
+  }
+
+  function setShadeRect(rect) {
+    if (!overlayState?.shades) return;
+    const [shadeTop, shadeRight, shadeBottom, shadeLeft] = overlayState.shades;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const right = rect.x + rect.width;
+    const bottom = rect.y + rect.height;
+
+    shadeTop.style.left = "0px";
+    shadeTop.style.top = "0px";
+    shadeTop.style.width = `${viewportWidth}px`;
+    shadeTop.style.height = `${rect.y}px`;
+
+    shadeRight.style.left = `${right}px`;
+    shadeRight.style.top = `${rect.y}px`;
+    shadeRight.style.width = `${Math.max(0, viewportWidth - right)}px`;
+    shadeRight.style.height = `${rect.height}px`;
+
+    shadeBottom.style.left = "0px";
+    shadeBottom.style.top = `${bottom}px`;
+    shadeBottom.style.width = `${viewportWidth}px`;
+    shadeBottom.style.height = `${Math.max(0, viewportHeight - bottom)}px`;
+
+    shadeLeft.style.left = "0px";
+    shadeLeft.style.top = `${rect.y}px`;
+    shadeLeft.style.width = `${rect.x}px`;
+    shadeLeft.style.height = `${rect.height}px`;
   }
 
   function createToolbar() {
@@ -341,14 +343,13 @@
 
     overlayState.busy = true;
     overlayState.rect = rect;
-    await waitForCleanFrame();
 
     try {
-      const response = await chrome.runtime.sendMessage({
+      const response = await captureWithOverlayHidden(() => chrome.runtime.sendMessage({
         type: "GLEAMSHOT_CAPTURE_SELECTION",
         rect,
         viewport,
-      });
+      }));
 
       if (!response?.ok || !response.captureKey) {
         throw new Error(response?.error || "Capture failed");
@@ -364,29 +365,25 @@
     }
   }
 
-  async function captureVisibleTabAndOpenEditor() {
-    const viewport = {
+  async function captureVisibleAreaSelection() {
+    if (!overlayState || overlayState.busy || overlayState.captureKey) return;
+    const rect = {
+      x: 0,
+      y: 0,
       width: window.innerWidth,
       height: window.innerHeight,
     };
 
-    teardownOverlay({ preserveCapture: false });
-    await waitForCleanFrame();
+    overlayState.rect = rect;
+    overlayState.box.style.display = "block";
+    overlayState.box.style.left = "0px";
+    overlayState.box.style.top = "0px";
+    overlayState.box.style.width = `${rect.width}px`;
+    overlayState.box.style.height = `${rect.height}px`;
+    overlayState.hint.style.display = "none";
+    setShadeRect(rect);
 
-    const response = await chrome.runtime.sendMessage({
-      type: "GLEAMSHOT_CAPTURE_SELECTION",
-      rect: null,
-      viewport,
-    });
-
-    if (!response?.ok || !response.captureKey) {
-      throw new Error(response?.error || "Capture failed");
-    }
-
-    await chrome.runtime.sendMessage({
-      type: "GLEAMSHOT_OPEN_EDITOR",
-      captureKey: response.captureKey,
-    });
+    await captureSelectionForToolbar(rect);
   }
 
   function showToolbar(rect) {
@@ -420,6 +417,26 @@
     await navigator.clipboard.write([
       new ClipboardItem({ [blob.type || "image/png"]: blob }),
     ]);
+  }
+
+  async function captureWithOverlayHidden(capture) {
+    if (!overlayState) {
+      return await capture();
+    }
+
+    const { overlay } = overlayState;
+    const previousVisibility = overlay.style.visibility;
+    overlay.style.visibility = "hidden";
+    await waitForCleanFrame();
+
+    try {
+      return await capture();
+    } finally {
+      if (overlayState) {
+        overlay.style.visibility = previousVisibility;
+        await waitForCleanFrame();
+      }
+    }
   }
 
   function waitForCleanFrame() {

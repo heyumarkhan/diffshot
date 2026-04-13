@@ -175,22 +175,30 @@
     }
   }
 
-  function submitCapture(rect) {
+  async function submitCapture(rect) {
     const viewport = {
       width: window.innerWidth,
       height: window.innerHeight,
     };
 
-    chrome.runtime.sendMessage(
-      {
-        type: "GLEAMSHOT_CAPTURE_SELECTION",
-        rect,
-        viewport,
-      },
-      () => {
-        teardownOverlay();
-      }
-    );
+    teardownOverlay();
+    await waitForCleanFrame();
+
+    chrome.runtime.sendMessage({
+      type: "GLEAMSHOT_CAPTURE_SELECTION",
+      rect,
+      viewport,
+    });
+  }
+
+  function waitForCleanFrame() {
+    return new Promise((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.setTimeout(resolve, 50);
+        });
+      });
+    });
   }
 
   function teardownOverlay() {

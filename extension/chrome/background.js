@@ -12,8 +12,8 @@ chrome.action.onClicked.addListener(async (tab) => {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === "GLEAMSHOT_CAPTURE_SELECTION") {
-    handleCaptureSelection(message, sender)
-      .then(() => sendResponse({ ok: true }))
+    captureSelection(message, sender)
+      .then((result) => sendResponse({ ok: true, ...result }))
       .catch((error) => {
         console.error("Capture failed", error);
         sendResponse({ ok: false, error: error?.message || "Capture failed" });
@@ -21,10 +21,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message?.type === "GLEAMSHOT_OPEN_EDITOR") {
+    openEditorForCapture(message.captureKey)
+      .then(() => sendResponse({ ok: true }))
+      .catch((error) => sendResponse({ ok: false, error: error?.message || "Could not open editor" }));
+    return true;
+  }
+
+  if (message?.type === "GLEAMSHOT_DOWNLOAD_CAPTURE") {
+    downloadCapture(message.captureKey)
+      .then(() => sendResponse({ ok: true }))
+      .catch((error) => sendResponse({ ok: false, error: error?.message || "Could not download capture" }));
+    return true;
+  }
+
+  if (message?.type === "GLEAMSHOT_DISCARD_CAPTURE") {
+    discardCapture(message.captureKey)
+      .then(() => sendResponse({ ok: true }))
+      .catch((error) => sendResponse({ ok: false, error: error?.message || "Could not discard capture" }));
+    return true;
+  }
+
   return false;
 });
 
-async function handleCaptureSelection(message, sender) {
+async function captureSelection(message, sender) {
   const tab = sender.tab;
   if (!tab?.id || typeof tab.windowId !== "number") {
     throw new Error("Missing sender tab context");
@@ -48,21 +69,7 @@ async function handleCaptureSelection(message, sender) {
     },
   });
 
-  const editorTab = await chrome.tabs.create({
-    url: `${EDITOR_URL}?source=extension&captureKey=${encodeURIComponent(captureKey)}`,
-    active: true,
-  });
-
-  waitForTabComplete(editorTab.id, async () => {
-    try {
-      await chrome.tabs.sendMessage(editorTab.id, {
-        type: "GLEAMSHOT_DELIVER_CAPTURE",
-        captureKey,
-      });
-    } catch (error) {
-      console.warn("Capture delivery ping failed", error);
-    }
-  });
+  return { captureKey };
 }
 
 function normalizeRect(rect, viewport) {
@@ -119,6 +126,50 @@ function blobToDataUrl(blob) {
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
+}
+
+async function openEditorForCapture(captureKey) {
+  const editorTab = await chrome.tabs.create({
+    url: `${EDITOR_URL}?source=extension&captureKey=${encodeURIComponent(captureKey)}`,
+    active: true,
+  });
+
+  waitForTabComplete(editorTab.id, async () => {
+    try {
+      await chrome.tabs.sendMessage(editorTab.id, {
+        type: "GLEAMSHOT_DELIVER_CAPTURE",
+        captureKey,
+      });
+    } catch (error) {
+      console.warn("Capture delivery ping failed", error);
+    }
+  });
+}
+
+async function downloadCapture(captureKey) {
+  const payload = await getStoredCapture(captureKey);
+  if (!payload?.dataUrl) {
+    throw new Error("Capture not found");
+  }
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  await chrome.downloads.download({
+    url: payload.dataUrl,
+    filename: `gleamshot/gleamshot-${timestamp}.png`,
+    saveAs: true,
+  });
+}
+
+async function discardCapture(captureKey) {
+  if (!captureKey) return;
+  await chrome.storage.local.remove(STORAGE_PREFIX + captureKey);
+}
+
+async function getStoredCapture(captureKey) {
+  if (!captureKey) return null;
+  const storageKey = STORAGE_PREFIX + captureKey;
+  const stored = await chrome.storage.local.get(storageKey);
+  return stored?.[storageKey] || null;
 }
 
 function waitForTabComplete(tabId, callback) {

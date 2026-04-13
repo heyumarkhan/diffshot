@@ -3,7 +3,7 @@
   "name": "GleamShot Capture",
   "description": "Capture a selected area and open it in the GleamShot editor.",
   "version": "0.1.0",
-  "permissions": ["activeTab", "storage", "tabs"],
+  "permissions": ["activeTab", "storage", "tabs", "downloads"],
   "host_permissions": ["<all_urls>", "https://gleamshot.io/*", "http://localhost:3000/*"],
   "background": {
     "service_worker": "background.js"

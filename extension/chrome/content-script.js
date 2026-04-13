@@ -835,8 +835,11 @@
     const active = overlayState?.activeTextEditor?.editor;
     if (!active || !overlayState) return;
     active.style.color = overlayState.annotationColor;
-    active.style.font = `700 ${overlayState.annotationSize}px/1.25 system-ui, sans-serif`;
+    active.style.font = `${overlayState.annotationSize}px/1.25 system-ui, sans-serif`;
+    active.style.fontWeight = "400";
     active.style.caretColor = overlayState.annotationColor;
+    active.style.textShadow = "none";
+    active.style.webkitTextStroke = "0";
     active.style.width = `${Math.max(80, Math.min(overlayState.rect.width - overlayState.activeTextEditor.point.x, 320))}px`;
     autoSizeTextarea(active);
   }
@@ -880,19 +883,14 @@
     if (!ctx || !overlayState) return;
     const lines = String(text).split("\n");
     const lineHeight = Math.round(overlayState.annotationSize * 1.25);
-    const strokeWidth = Math.max(3, Math.round(overlayState.annotationSize / 6));
 
     ctx.save();
     ctx.fillStyle = overlayState.annotationColor;
-    ctx.font = `700 ${overlayState.annotationSize}px system-ui, sans-serif`;
+    ctx.font = `${overlayState.annotationSize}px system-ui, sans-serif`;
     ctx.textBaseline = "top";
-    ctx.lineJoin = "round";
-    ctx.lineWidth = strokeWidth;
-    ctx.strokeStyle = "rgba(255,255,255,0.92)";
 
     lines.forEach((line, index) => {
       const y = point.y + index * lineHeight;
-      ctx.strokeText(line, point.x, y);
       ctx.fillText(line, point.x, y);
     });
     ctx.restore();

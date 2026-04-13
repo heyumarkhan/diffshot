@@ -6,8 +6,9 @@ Current MVP flow:
 
 1. Click the extension action on any page.
 2. Drag to select an area, or click **Capture visible tab**.
-3. The extension captures the current tab, crops the selection, and opens `https://gleamshot.io/create?source=extension&captureKey=...`.
-4. The editor hydrates the captured image from local storage and loads it as the primary screenshot.
+3. After an area selection, the extension captures the crop and shows an icon-only action toolbar near the selection.
+4. From the toolbar, you can download, copy, open in the GleamShot editor, or cancel the capture.
+5. Full-tab capture still opens `https://gleamshot.io/create?source=extension&captureKey=...` directly.
 
 Notes:
 

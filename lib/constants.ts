@@ -46,6 +46,7 @@ export const DEFAULT_STATE = {
   shadowIntensity: "medium" as "light" | "medium" | "strong",
   exportSize: "linkedin" as "linkedin" | "twitter" | "square" | "tall",
   showWatermark: true,
+  launchSource: "web" as "web" | "extension",
 }
 
 export type EditorState = typeof DEFAULT_STATE & {

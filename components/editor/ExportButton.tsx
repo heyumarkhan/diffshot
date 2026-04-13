@@ -7,6 +7,7 @@ interface ExportButtonProps {
   canvasRef: RefObject<{ exportPNG: (filename?: string) => Promise<void> } | null>
   disabled: boolean
   state: EditorState
+  onActionComplete?: (action: "download" | "copy") => void
 }
 
 function exportFilename(state: EditorState) {
@@ -21,7 +22,7 @@ function exportFilename(state: EditorState) {
   return `gleamshot-${slug || "screenshot"}-${state.exportSize}.png`
 }
 
-export function ExportButton({ canvasRef, disabled, state }: ExportButtonProps) {
+export function ExportButton({ canvasRef, disabled, state, onActionComplete }: ExportButtonProps) {
   const [loading, setLoading] = useState(false)
   const [downloaded, setDownloaded] = useState(false)
   const exportSize = EXPORT_SIZES[state.exportSize]
@@ -32,6 +33,7 @@ export function ExportButton({ canvasRef, disabled, state }: ExportButtonProps) 
     setDownloaded(false)
     try {
       await canvasRef.current.exportPNG(exportFilename(state))
+      onActionComplete?.("download")
       setDownloaded(true)
       window.setTimeout(() => setDownloaded(false), 1800)
     } finally {

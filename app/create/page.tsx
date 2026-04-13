@@ -2,7 +2,8 @@
 
 // Metadata is in a separate server component — see layout for base metadata
 import Link from "next/link"
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { useEditorState } from "@/hooks/useEditorState"
 import { UploadZone } from "@/components/editor/UploadZone"
 import { CanvasPreview, CanvasPreviewHandle } from "@/components/editor/CanvasPreview"
@@ -10,12 +11,30 @@ import { Sidebar } from "@/components/editor/Sidebar"
 import { ExportButton } from "@/components/editor/ExportButton"
 
 export default function CreatePage() {
+  const searchParams = useSearchParams()
   const { state, updateState, resetState } = useEditorState()
   const canvasRef = useRef<CanvasPreviewHandle>(null)
   const [mobileTab, setMobileTab] = useState<"controls" | "preview">("controls")
 
   const hasImage = !!(state.beforeImage || state.afterImage)
   const hasStarterCopy = !!(state.title || state.subtitle || state.badge)
+
+  useEffect(() => {
+    const source = searchParams.get("source")
+    if ((source === "web" || source === "extension") && source !== state.launchSource) {
+      updateState({ launchSource: source })
+    }
+  }, [searchParams, state.launchSource, updateState])
+
+  function handleEditorActionComplete(action: "download" | "copy") {
+    if (state.launchSource !== "extension") return
+
+    window.dispatchEvent(
+      new CustomEvent("gleamshot:editor-action-complete", {
+        detail: { action, launchSource: state.launchSource },
+      })
+    )
+  }
 
   function handleBeforeUpload(file: File) {
     updateState({
@@ -100,13 +119,13 @@ export default function CreatePage() {
 
   const floatingDownload = (
     <div className="fixed bottom-6 left-0 w-[400px] px-5 z-50 hidden md:block">
-      <ExportButton canvasRef={canvasRef} disabled={!hasImage} state={state} />
+      <ExportButton canvasRef={canvasRef} disabled={!hasImage} state={state} onActionComplete={handleEditorActionComplete} />
     </div>
   )
 
   const mobileFloatingDownload = (
     <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden">
-      <ExportButton canvasRef={canvasRef} disabled={!hasImage} state={state} />
+      <ExportButton canvasRef={canvasRef} disabled={!hasImage} state={state} onActionComplete={handleEditorActionComplete} />
     </div>
   )
 

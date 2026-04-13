@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useState } from "react"
 import { DEFAULT_STATE, EditorState } from "@/lib/constants"
 
 const initialState: EditorState = {
@@ -12,13 +12,13 @@ const initialState: EditorState = {
 export function useEditorState() {
   const [state, setState] = useState<EditorState>(initialState)
 
-  function updateState(partial: Partial<EditorState>) {
+  const updateState = useCallback((partial: Partial<EditorState>) => {
     setState((prev) => ({ ...prev, ...partial }))
-  }
+  }, [])
 
-  function resetState() {
+  const resetState = useCallback(() => {
     setState(initialState)
-  }
+  }, [])
 
   return { state, setState, updateState, resetState }
 }

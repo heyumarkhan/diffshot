@@ -43,19 +43,23 @@
       "inset: 0",
       "z-index: 2147483647",
       "cursor: crosshair",
-      "background: rgba(15, 23, 42, 0.22)",
-      "backdrop-filter: blur(1px)",
       "user-select: none",
     ].join(";");
+
+    const shadeTop = createShade();
+    const shadeRight = createShade();
+    const shadeBottom = createShade();
+    const shadeLeft = createShade();
 
     const box = document.createElement("div");
     box.style.cssText = [
       "position: fixed",
       "border: 2px solid #3b82f6",
-      "background: rgba(59, 130, 246, 0.15)",
       "display: none",
       "pointer-events: none",
-      "box-shadow: 0 0 0 99999px rgba(15, 23, 42, 0.35)",
+      "box-sizing: border-box",
+      "background: transparent",
+      "will-change: left, top, width, height",
     ].join(";");
 
     const hint = document.createElement("div");
@@ -113,6 +117,10 @@
 
     hint.appendChild(fullButton);
     hint.appendChild(cancelButton);
+    overlay.appendChild(shadeTop);
+    overlay.appendChild(shadeRight);
+    overlay.appendChild(shadeBottom);
+    overlay.appendChild(shadeLeft);
     overlay.appendChild(box);
     overlay.appendChild(hint);
     document.documentElement.appendChild(overlay);
@@ -120,6 +128,7 @@
     overlayState = {
       overlay,
       box,
+      shades: [shadeTop, shadeRight, shadeBottom, shadeLeft],
       dragging: false,
       startX: 0,
       startY: 0,
@@ -129,6 +138,8 @@
         }
       },
     };
+
+    setShadeRect({ x: 0, y: 0, width: 0, height: 0 });
 
     document.addEventListener("keydown", overlayState.keyHandler, true);
 
@@ -164,6 +175,34 @@
       box.style.top = `${rect.y}px`;
       box.style.width = `${rect.width}px`;
       box.style.height = `${rect.height}px`;
+      setShadeRect(rect);
+    }
+
+    function setShadeRect(rect) {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const right = rect.x + rect.width;
+      const bottom = rect.y + rect.height;
+
+      shadeTop.style.left = "0px";
+      shadeTop.style.top = "0px";
+      shadeTop.style.width = `${viewportWidth}px`;
+      shadeTop.style.height = `${rect.y}px`;
+
+      shadeRight.style.left = `${right}px`;
+      shadeRight.style.top = `${rect.y}px`;
+      shadeRight.style.width = `${Math.max(0, viewportWidth - right)}px`;
+      shadeRight.style.height = `${rect.height}px`;
+
+      shadeBottom.style.left = "0px";
+      shadeBottom.style.top = `${bottom}px`;
+      shadeBottom.style.width = `${viewportWidth}px`;
+      shadeBottom.style.height = `${Math.max(0, viewportHeight - bottom)}px`;
+
+      shadeLeft.style.left = "0px";
+      shadeLeft.style.top = `${rect.y}px`;
+      shadeLeft.style.width = `${rect.x}px`;
+      shadeLeft.style.height = `${rect.height}px`;
     }
 
     function getRect(currentX, currentY) {
@@ -173,6 +212,17 @@
       const height = Math.abs(currentY - overlayState.startY);
       return { x, y, width, height };
     }
+  }
+
+  function createShade() {
+    const shade = document.createElement("div");
+    shade.style.cssText = [
+      "position: fixed",
+      "background: rgba(15, 23, 42, 0.3)",
+      "pointer-events: none",
+      "will-change: left, top, width, height",
+    ].join(";");
+    return shade;
   }
 
   async function submitCapture(rect) {

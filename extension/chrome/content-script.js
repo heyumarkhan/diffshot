@@ -4,9 +4,9 @@
   const TOOLBAR_GAP = 12;
   const TOOLBAR_HEIGHT = 48;
   const TOOLBAR_WIDTH = 196;
-  const ANNOTATION_TOOLBAR_WIDTH = 132;
-  const ANNOTATION_TOOLBAR_HEIGHT = 288;
-  const ANNOTATION_COLOR = "#ef4444";
+  const ANNOTATION_TOOLBAR_WIDTH = 328;
+  const ANNOTATION_TOOLBAR_HEIGHT = 52;
+  const DEFAULT_ANNOTATION_COLOR = "#f97316";
   let overlayState = null;
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -133,7 +133,11 @@
       annotationButtons: [],
       annotationDraft: null,
       annotationsDirty: false,
-      fontSize: 24,
+      annotationColor: DEFAULT_ANNOTATION_COLOR,
+      annotationSize: 24,
+      styleSizeInput: annotationToolbar.querySelector("[data-annotation-size]"),
+      styleColorInput: annotationToolbar.querySelector("[data-annotation-color]"),
+      activeTextEditor: null,
       hint,
       shades: [shadeTop, shadeRight, shadeBottom, shadeLeft],
       dragging: false,
@@ -144,6 +148,12 @@
       busy: false,
       keyHandler: (event) => {
         if (event.key === "Escape") {
+          if (overlayState?.activeTextEditor) {
+            event.stopPropagation();
+            event.preventDefault();
+            removeActiveTextEditor();
+            return;
+          }
           teardownOverlay({ preserveCapture: false });
         }
       },
@@ -315,14 +325,15 @@
     toolbar.style.cssText = [
       "position: fixed",
       "display: none",
-      "flex-direction: column",
+      "align-items: center",
       "gap: 8px",
       "padding: 8px",
-      "width: 132px",
+      `width: ${ANNOTATION_TOOLBAR_WIDTH}px`,
+      `height: ${ANNOTATION_TOOLBAR_HEIGHT}px`,
       "box-sizing: border-box",
       "background: rgba(15, 23, 42, 0.94)",
       "border: 1px solid rgba(255,255,255,0.12)",
-      "border-radius: 8px",
+      "border-radius: 14px",
       "box-shadow: 0 14px 36px rgba(0,0,0,0.28)",
       "backdrop-filter: blur(10px)",
       "cursor: default",
@@ -330,61 +341,94 @@
     ].join(";");
 
     const tools = [
-      ["text", "Text"],
-      ["arrow", "Arrow"],
-      ["rect", "Rectangle"],
-      ["circle", "Circle"],
-      ["line", "Line"],
+      ["text", "T", "Text"],
+      ["arrow", "↗", "Arrow"],
+      ["rect", "▭", "Rectangle"],
+      ["circle", "◯", "Circle"],
+      ["line", "／", "Line"],
     ];
 
-    tools.forEach(([tool, label]) => {
+    const toolWrap = document.createElement("div");
+    toolWrap.style.cssText = [
+      "display: flex",
+      "align-items: center",
+      "gap: 6px",
+      "flex: 1 1 auto",
+      "min-width: 0",
+    ].join(";");
+
+    tools.forEach(([tool, icon, label]) => {
       const button = document.createElement("button");
       button.type = "button";
-      button.textContent = label;
+      button.textContent = icon;
+      button.title = label;
+      button.setAttribute("aria-label", label);
       button.style.cssText = annotationButtonStyles(false);
       button.addEventListener("click", (event) => {
         event.stopPropagation();
         if (!overlayState) return;
+        commitActiveTextEditor();
         overlayState.annotationTool = tool;
         updateAnnotationToolButtons();
       });
-      toolbar.appendChild(button);
       button.dataset.annotationTool = tool;
+      toolWrap.appendChild(button);
     });
 
-    const sizeLabel = document.createElement("label");
-    sizeLabel.textContent = "Font size";
-    sizeLabel.style.cssText = [
-      "display: grid",
-      "gap: 5px",
-      "color: rgba(255,255,255,0.78)",
-      "font: 12px/1.2 system-ui, sans-serif",
-    ].join(";");
+    const divider = document.createElement("div");
+    divider.style.cssText = "width: 1px; height: 24px; background: rgba(255,255,255,0.12); flex: 0 0 auto;";
 
     const sizeInput = document.createElement("input");
-    sizeInput.type = "number";
+    sizeInput.type = "range";
     sizeInput.min = "12";
-    sizeInput.max = "96";
+    sizeInput.max = "48";
     sizeInput.step = "2";
     sizeInput.value = "24";
-    sizeInput.style.cssText = [
-      "width: 100%",
-      "box-sizing: border-box",
-      "border: 1px solid rgba(255,255,255,0.18)",
-      "border-radius: 8px",
-      "background: rgba(255,255,255,0.08)",
-      "color: white",
-      "padding: 7px 8px",
-      "font: 13px/1 system-ui, sans-serif",
-    ].join(";");
+    sizeInput.title = "Annotation size";
+    sizeInput.setAttribute("aria-label", "Annotation size");
+    sizeInput.dataset.annotationSize = "true";
+    sizeInput.style.cssText = "width: 92px; accent-color: #f97316; cursor: pointer;";
     sizeInput.addEventListener("click", (event) => event.stopPropagation());
     sizeInput.addEventListener("input", () => {
       if (!overlayState) return;
-      overlayState.fontSize = clamp(Number(sizeInput.value) || 24, 12, 96);
+      overlayState.annotationSize = clamp(Number(sizeInput.value) || 24, 12, 48);
+      sizeBadge.textContent = String(overlayState.annotationSize);
+      syncActiveTextEditorStyle();
     });
 
-    sizeLabel.appendChild(sizeInput);
-    toolbar.appendChild(sizeLabel);
+    const sizeBadge = document.createElement("div");
+    sizeBadge.textContent = "24";
+    sizeBadge.style.cssText = "min-width: 28px; color: rgba(255,255,255,0.78); font: 12px/1 system-ui, sans-serif; text-align: center;";
+
+    const colorInput = document.createElement("input");
+    colorInput.type = "color";
+    colorInput.value = DEFAULT_ANNOTATION_COLOR;
+    colorInput.title = "Annotation color";
+    colorInput.setAttribute("aria-label", "Annotation color");
+    colorInput.dataset.annotationColor = "true";
+    colorInput.style.cssText = [
+      "width: 28px",
+      "height: 28px",
+      "padding: 0",
+      "border: 0",
+      "border-radius: 999px",
+      "background: transparent",
+      "cursor: pointer",
+      "overflow: hidden",
+      "flex: 0 0 auto",
+    ].join(";");
+    colorInput.addEventListener("click", (event) => event.stopPropagation());
+    colorInput.addEventListener("input", () => {
+      if (!overlayState) return;
+      overlayState.annotationColor = colorInput.value || DEFAULT_ANNOTATION_COLOR;
+      syncActiveTextEditorStyle();
+    });
+
+    toolbar.appendChild(toolWrap);
+    toolbar.appendChild(divider);
+    toolbar.appendChild(sizeInput);
+    toolbar.appendChild(sizeBadge);
+    toolbar.appendChild(colorInput);
 
     return toolbar;
   }
@@ -560,14 +604,13 @@
   function positionAnnotationToolbar(rect) {
     if (!overlayState?.annotationToolbar) return;
     const toolbar = overlayState.annotationToolbar;
-    const outsideLeft = rect.x + rect.width + TOOLBAR_GAP;
-    const fitsOutsideRight = outsideLeft + ANNOTATION_TOOLBAR_WIDTH <= window.innerWidth - 8;
-    const insideLeft = rect.x + Math.max(8, rect.width - ANNOTATION_TOOLBAR_WIDTH - 8);
-    const left = fitsOutsideRight
-      ? outsideLeft
-      : clamp(insideLeft, 8, window.innerWidth - ANNOTATION_TOOLBAR_WIDTH - 8);
+    const left = clamp(
+      rect.x + rect.width - ANNOTATION_TOOLBAR_WIDTH,
+      8,
+      window.innerWidth - ANNOTATION_TOOLBAR_WIDTH - 8,
+    );
     const top = clamp(
-      rect.y,
+      rect.y - ANNOTATION_TOOLBAR_HEIGHT - TOOLBAR_GAP,
       8,
       Math.max(8, window.innerHeight - ANNOTATION_TOOLBAR_HEIGHT - 8),
     );
@@ -583,10 +626,11 @@
 
     const point = getAnnotationPoint(event);
     if (overlayState.annotationTool === "text") {
-      addTextAnnotation(point);
+      beginInlineTextAnnotation(point);
       return;
     }
 
+    commitActiveTextEditor();
     overlayState.annotationCanvas.setPointerCapture(event.pointerId);
     overlayState.annotationDraft = {
       tool: overlayState.annotationTool,
@@ -622,22 +666,62 @@
     overlayState.annotationDraft = null;
   }
 
-  function addTextAnnotation(point) {
-    if (!overlayState?.annotationCtx) return;
-    const text = window.prompt("Annotation text");
-    if (!text) return;
+  function beginInlineTextAnnotation(point) {
+    if (!overlayState?.overlay || !overlayState.rect) return;
+    removeActiveTextEditor();
 
-    const ctx = overlayState.annotationCtx;
-    ctx.save();
-    ctx.fillStyle = ANNOTATION_COLOR;
-    ctx.font = `700 ${overlayState.fontSize}px system-ui, sans-serif`;
-    ctx.textBaseline = "top";
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = "rgba(255,255,255,0.88)";
-    ctx.strokeText(text, point.x, point.y);
-    ctx.fillText(text, point.x, point.y);
-    ctx.restore();
-    overlayState.annotationsDirty = true;
+    const editor = document.createElement("textarea");
+    editor.rows = 1;
+    editor.placeholder = "Type…";
+    editor.spellcheck = false;
+    editor.wrap = "soft";
+    editor.style.cssText = [
+      "position: fixed",
+      "min-width: 80px",
+      "min-height: 1.4em",
+      "width: 180px",
+      "padding: 0",
+      "margin: 0",
+      "border: 0",
+      "outline: none",
+      "resize: none",
+      "overflow: hidden",
+      "background: transparent",
+      "box-shadow: none",
+      "white-space: pre-wrap",
+      "overflow-wrap: break-word",
+      "z-index: 2147483647",
+    ].join(";");
+
+    overlayState.overlay.appendChild(editor);
+    overlayState.activeTextEditor = { editor, point };
+    positionActiveTextEditor(point);
+    syncActiveTextEditorStyle();
+    autoSizeTextarea(editor);
+
+    editor.addEventListener("pointerdown", (event) => event.stopPropagation());
+    editor.addEventListener("click", (event) => event.stopPropagation());
+    editor.addEventListener("input", () => {
+      syncActiveTextEditorStyle();
+      autoSizeTextarea(editor);
+    });
+    editor.addEventListener("blur", () => {
+      commitActiveTextEditor();
+    });
+    editor.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        removeActiveTextEditor();
+        return;
+      }
+
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        commitActiveTextEditor();
+      }
+    });
+
+    editor.focus();
   }
 
   function redrawAnnotationDraft() {
@@ -647,9 +731,9 @@
 
     restoreAnnotationSnapshot(snapshot);
     ctx.save();
-    ctx.strokeStyle = ANNOTATION_COLOR;
-    ctx.fillStyle = ANNOTATION_COLOR;
-    ctx.lineWidth = 4;
+    ctx.strokeStyle = overlayState.annotationColor;
+    ctx.fillStyle = overlayState.annotationColor;
+    ctx.lineWidth = getAnnotationStrokeWidth();
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
@@ -678,7 +762,7 @@
 
     if (!withArrow) return;
     const angle = Math.atan2(end.y - start.y, end.x - start.x);
-    const headLength = 16;
+    const headLength = Math.max(12, (overlayState?.annotationSize || 24) * 0.9);
     ctx.beginPath();
     ctx.moveTo(end.x, end.y);
     ctx.lineTo(
@@ -726,17 +810,92 @@
 
   function annotationButtonStyles(active) {
     return [
-      "width: 100%",
+      "width: 32px",
+      "height: 32px",
       "border: 0",
-      "border-radius: 8px",
+      "border-radius: 10px",
       `background: ${active ? "rgba(59, 130, 246, 0.88)" : "rgba(255,255,255,0.08)"}`,
       "color: white",
-      "padding: 8px 10px",
-      "font: 12px/1 system-ui, sans-serif",
+      "padding: 0",
+      "font: 17px/1 system-ui, sans-serif",
       "font-weight: 700",
-      "text-align: left",
+      "display: inline-flex",
+      "align-items: center",
+      "justify-content: center",
       "cursor: pointer",
+      "flex: 0 0 auto",
     ].join(";");
+  }
+
+  function getAnnotationStrokeWidth() {
+    return Math.max(2, Math.round((overlayState?.annotationSize || 24) / 8));
+  }
+
+  function syncActiveTextEditorStyle() {
+    const active = overlayState?.activeTextEditor?.editor;
+    if (!active || !overlayState) return;
+    active.style.color = overlayState.annotationColor;
+    active.style.font = `700 ${overlayState.annotationSize}px/1.25 system-ui, sans-serif`;
+    active.style.caretColor = overlayState.annotationColor;
+    active.style.width = `${Math.max(80, Math.min(overlayState.rect.width - overlayState.activeTextEditor.point.x, 320))}px`;
+    autoSizeTextarea(active);
+  }
+
+  function positionActiveTextEditor(point) {
+    const active = overlayState?.activeTextEditor?.editor;
+    if (!active || !overlayState?.rect) return;
+    active.style.left = `${overlayState.rect.x + point.x}px`;
+    active.style.top = `${overlayState.rect.y + point.y}px`;
+    active.style.maxWidth = `${Math.max(40, overlayState.rect.width - point.x)}px`;
+    active.style.maxHeight = `${Math.max(24, overlayState.rect.height - point.y)}px`;
+  }
+
+  function autoSizeTextarea(textarea) {
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.max(textarea.scrollHeight, 24)}px`;
+  }
+
+  function commitActiveTextEditor() {
+    if (!overlayState?.activeTextEditor?.editor || !overlayState.annotationCtx) return;
+    const { editor, point } = overlayState.activeTextEditor;
+    const text = editor.value.replace(/\s+$/g, "");
+
+    if (text.trim()) {
+      drawTextAnnotation(text, point);
+      overlayState.annotationsDirty = true;
+    }
+
+    removeActiveTextEditor();
+  }
+
+  function removeActiveTextEditor() {
+    const active = overlayState?.activeTextEditor?.editor;
+    if (!active || !overlayState) return;
+    active.remove();
+    overlayState.activeTextEditor = null;
+  }
+
+  function drawTextAnnotation(text, point) {
+    const ctx = overlayState?.annotationCtx;
+    if (!ctx || !overlayState) return;
+    const lines = String(text).split("\n");
+    const lineHeight = Math.round(overlayState.annotationSize * 1.25);
+    const strokeWidth = Math.max(3, Math.round(overlayState.annotationSize / 6));
+
+    ctx.save();
+    ctx.fillStyle = overlayState.annotationColor;
+    ctx.font = `700 ${overlayState.annotationSize}px system-ui, sans-serif`;
+    ctx.textBaseline = "top";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = strokeWidth;
+    ctx.strokeStyle = "rgba(255,255,255,0.92)";
+
+    lines.forEach((line, index) => {
+      const y = point.y + index * lineHeight;
+      ctx.strokeText(line, point.x, y);
+      ctx.fillText(line, point.x, y);
+    });
+    ctx.restore();
   }
 
   function clamp(value, min, max) {
@@ -745,6 +904,7 @@
   }
 
   async function persistAnnotatedCapture() {
+    commitActiveTextEditor();
     if (!overlayState?.annotationsDirty || !overlayState.captureKey || !overlayState.annotationCanvas) return;
     const storageKey = STORAGE_PREFIX + overlayState.captureKey;
     const stored = await chrome.storage.local.get(storageKey);
@@ -827,6 +987,7 @@
 
   async function teardownOverlay({ preserveCapture }) {
     if (!overlayState) return;
+    commitActiveTextEditor();
     const { captureKey, overlay, keyHandler } = overlayState;
     document.removeEventListener("keydown", keyHandler, true);
     overlay.remove();

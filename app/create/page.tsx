@@ -2,20 +2,92 @@
 
 // Metadata is in a separate server component — see layout for base metadata
 import Link from "next/link"
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { useEditorState } from "@/hooks/useEditorState"
 import { UploadZone } from "@/components/editor/UploadZone"
 import { CanvasPreview, CanvasPreviewHandle } from "@/components/editor/CanvasPreview"
 import { Sidebar } from "@/components/editor/Sidebar"
 import { ExportButton } from "@/components/editor/ExportButton"
 
+const EXTENSION_STORAGE_PREFIX = "gleamshot-extension-capture:"
+
+async function dataUrlToFile(dataUrl: string, filename: string) {
+  const response = await fetch(dataUrl)
+  const blob = await response.blob()
+  return new File([blob], filename, { type: blob.type || "image/png" })
+}
+
 export default function CreatePage() {
+  const searchParams = useSearchParams()
   const { state, updateState, resetState } = useEditorState()
   const canvasRef = useRef<CanvasPreviewHandle>(null)
+  const consumedCaptureRef = useRef<string | null>(null)
   const [mobileTab, setMobileTab] = useState<"controls" | "preview">("controls")
+  const [extensionStatus, setExtensionStatus] = useState<"idle" | "ready" | "missing">("idle")
 
   const hasImage = !!(state.beforeImage || state.afterImage)
   const hasStarterCopy = !!(state.title || state.subtitle || state.badge)
+  const launchSource = searchParams.get("source")
+  const captureKey = searchParams.get("captureKey")
+
+  useEffect(() => {
+    if (launchSource !== "extension" || !captureKey || consumedCaptureRef.current === captureKey) return
+
+    let cancelled = false
+
+    async function loadExtensionCapture() {
+      const storageKey = `${EXTENSION_STORAGE_PREFIX}${captureKey}`
+      const raw = window.localStorage.getItem(storageKey)
+      if (!raw) {
+        if (!cancelled) setExtensionStatus("missing")
+        return
+      }
+
+      try {
+        const payload = JSON.parse(raw) as { dataUrl?: string }
+        if (!payload?.dataUrl) {
+          throw new Error("Missing capture payload")
+        }
+
+        const file = await dataUrlToFile(payload.dataUrl, `gleamshot-extension-${captureKey}.png`)
+        if (cancelled) return
+
+        updateState({
+          beforeImage: file,
+          afterImage: null,
+          mode: "single",
+          title: state.title || "Fresh screenshot capture",
+          subtitle: state.subtitle || "Captured from the Chrome extension and ready to polish.",
+          badge: state.badge || "EXTENSION",
+          beforeLabel: state.beforeLabel || "SCREENSHOT",
+          beforeSublabel: state.beforeSublabel || "Captured area",
+        })
+        consumedCaptureRef.current = captureKey
+        setExtensionStatus("ready")
+        setMobileTab("preview")
+        window.localStorage.removeItem(storageKey)
+      } catch (error) {
+        console.error("Failed to load extension capture", error)
+        if (!cancelled) setExtensionStatus("missing")
+      }
+    }
+
+    loadExtensionCapture()
+
+    function handleCaptureReady(event: Event) {
+      const detail = (event as CustomEvent<{ captureKey?: string }>).detail
+      if (detail?.captureKey === captureKey) {
+        loadExtensionCapture()
+      }
+    }
+
+    window.addEventListener("gleamshot-extension-capture-ready", handleCaptureReady)
+    return () => {
+      cancelled = true
+      window.removeEventListener("gleamshot-extension-capture-ready", handleCaptureReady)
+    }
+  }, [captureKey, launchSource, state.badge, state.beforeLabel, state.beforeSublabel, state.subtitle, state.title, updateState])
 
   function handleBeforeUpload(file: File) {
     updateState({
@@ -110,6 +182,26 @@ export default function CreatePage() {
     </div>
   )
 
+  const extensionBanner = launchSource === "extension" && (
+    <div className={`mx-5 mt-4 rounded-xl border px-3 py-2 text-xs ${extensionStatus === "missing" ? "border-amber-200 bg-amber-50 text-amber-700" : "border-blue-200 bg-blue-50 text-blue-700"}`}>
+      {extensionStatus === "missing"
+        ? "Extension launch detected, but the screenshot handoff did not arrive. Try capture again."
+        : extensionStatus === "ready"
+          ? "Opened from the Chrome extension. Your captured image is now loaded into the editor."
+          : "Opened from the Chrome extension. Your captured image is loading into the editor."}
+    </div>
+  )
+
+  const mobileExtensionBanner = launchSource === "extension" && (
+    <div className={`mx-4 mt-3 rounded-xl border px-3 py-2 text-xs ${extensionStatus === "missing" ? "border-amber-200 bg-amber-50 text-amber-700" : "border-blue-200 bg-blue-50 text-blue-700"}`}>
+      {extensionStatus === "missing"
+        ? "Extension screenshot handoff did not arrive. Try capture again."
+        : extensionStatus === "ready"
+          ? "Opened from the Chrome extension. Your capture is now loaded into the editor."
+          : "Opened from the Chrome extension. Your capture is loading into the editor."}
+    </div>
+  )
+
   return (
     <>
       {/* Desktop layout (md and above) */}
@@ -121,6 +213,7 @@ export default function CreatePage() {
             </Link>
             <span className="text-xs text-gray-400">Free · No login</span>
           </div>
+          {extensionBanner}
           {sidebarContent}
         </div>
         <div className="flex-1 overflow-hidden">
@@ -151,6 +244,8 @@ export default function CreatePage() {
             </button>
           </div>
         </div>
+
+        {mobileExtensionBanner}
 
         {/* Mobile tab content */}
         <div className="flex-1 min-h-0 overflow-hidden bg-white">

@@ -3,7 +3,6 @@
 // Metadata is in a separate server component — see layout for base metadata
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
-import { useSearchParams } from "next/navigation"
 import { useEditorState } from "@/hooks/useEditorState"
 import { UploadZone } from "@/components/editor/UploadZone"
 import { CanvasPreview, CanvasPreviewHandle } from "@/components/editor/CanvasPreview"
@@ -19,17 +18,22 @@ async function dataUrlToFile(dataUrl: string, filename: string) {
 }
 
 export default function CreatePage() {
-  const searchParams = useSearchParams()
   const { state, updateState, resetState } = useEditorState()
   const canvasRef = useRef<CanvasPreviewHandle>(null)
   const consumedCaptureRef = useRef<string | null>(null)
   const [mobileTab, setMobileTab] = useState<"controls" | "preview">("controls")
   const [extensionStatus, setExtensionStatus] = useState<"idle" | "ready" | "missing">("idle")
+  const [launchSource, setLaunchSource] = useState<string | null>(null)
+  const [captureKey, setCaptureKey] = useState<string | null>(null)
 
   const hasImage = !!(state.beforeImage || state.afterImage)
   const hasStarterCopy = !!(state.title || state.subtitle || state.badge)
-  const launchSource = searchParams.get("source")
-  const captureKey = searchParams.get("captureKey")
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setLaunchSource(params.get("source"))
+    setCaptureKey(params.get("captureKey"))
+  }, [])
 
   useEffect(() => {
     if (launchSource !== "extension" || !captureKey || consumedCaptureRef.current === captureKey) return

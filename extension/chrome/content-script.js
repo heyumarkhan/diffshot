@@ -4,9 +4,13 @@
   const TOOLBAR_GAP = 12;
   const TOOLBAR_HEIGHT = 48;
   const TOOLBAR_WIDTH = 196;
-  const ANNOTATION_TOOLBAR_WIDTH = 328;
-  const ANNOTATION_TOOLBAR_HEIGHT = 52;
+  const ANNOTATION_TOOLBAR_WIDTH = 632;
+  const ANNOTATION_TOOLBAR_HEIGHT = 58;
   const DEFAULT_ANNOTATION_COLOR = "#f97316";
+  const DEFAULT_ANNOTATION_FONT_SIZE = 24;
+  const DEFAULT_ANNOTATION_STROKE_WIDTH = 3;
+  const FONT_SIZE_PRESETS = [12, 16, 20, 24, 32, 40, 48];
+  const STROKE_WIDTH_PRESETS = [2, 3, 4, 6, 8, 12];
   let overlayState = null;
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -134,9 +138,14 @@
       annotationDraft: null,
       annotationsDirty: false,
       annotationColor: DEFAULT_ANNOTATION_COLOR,
-      annotationSize: 24,
-      styleSizeInput: annotationToolbar.querySelector("[data-annotation-size]"),
+      annotationFontSize: DEFAULT_ANNOTATION_FONT_SIZE,
+      annotationStrokeWidth: DEFAULT_ANNOTATION_STROKE_WIDTH,
+      styleFontSizeSelect: annotationToolbar.querySelector("[data-annotation-font-size]"),
+      styleFontSizeCustomInput: annotationToolbar.querySelector("[data-annotation-font-size-custom]"),
+      styleStrokePreview: annotationToolbar.querySelector("[data-annotation-stroke-preview]"),
+      styleStrokeCustomInput: annotationToolbar.querySelector("[data-annotation-stroke-custom]"),
       styleColorInput: annotationToolbar.querySelector("[data-annotation-color]"),
+      styleHexInput: annotationToolbar.querySelector("[data-annotation-hex]"),
       activeTextEditor: null,
       hint,
       shades: [shadeTop, shadeRight, shadeBottom, shadeLeft],
@@ -329,6 +338,7 @@
       "gap: 8px",
       "padding: 8px",
       `width: ${ANNOTATION_TOOLBAR_WIDTH}px`,
+      "max-width: calc(100vw - 16px)",
       `height: ${ANNOTATION_TOOLBAR_HEIGHT}px`,
       "box-sizing: border-box",
       "background: rgba(15, 23, 42, 0.94)",
@@ -338,6 +348,7 @@
       "backdrop-filter: blur(10px)",
       "cursor: default",
       "pointer-events: auto",
+      "overflow: visible",
     ].join(";");
 
     const tools = [
@@ -348,13 +359,14 @@
       ["line", "／", "Line"],
     ];
 
-    const toolWrap = document.createElement("div");
-    toolWrap.style.cssText = [
+    const toolGroup = document.createElement("div");
+    toolGroup.style.cssText = [
       "display: flex",
       "align-items: center",
       "gap: 6px",
-      "flex: 1 1 auto",
-      "min-width: 0",
+      "flex: 0 0 auto",
+      "padding-right: 8px",
+      "border-right: 1px solid rgba(255,255,255,0.14)",
     ].join(";");
 
     tools.forEach(([tool, icon, label]) => {
@@ -372,33 +384,162 @@
         updateAnnotationToolButtons();
       });
       button.dataset.annotationTool = tool;
-      toolWrap.appendChild(button);
+      toolGroup.appendChild(button);
     });
 
-    const divider = document.createElement("div");
-    divider.style.cssText = "width: 1px; height: 24px; background: rgba(255,255,255,0.12); flex: 0 0 auto;";
+    const styleGroup = document.createElement("div");
+    styleGroup.style.cssText = [
+      "display: flex",
+      "align-items: center",
+      "gap: 8px",
+      "flex: 1 1 auto",
+      "min-width: 0",
+    ].join(";");
 
-    const sizeInput = document.createElement("input");
-    sizeInput.type = "range";
-    sizeInput.min = "12";
-    sizeInput.max = "48";
-    sizeInput.step = "2";
-    sizeInput.value = "24";
-    sizeInput.title = "Annotation size";
-    sizeInput.setAttribute("aria-label", "Annotation size");
-    sizeInput.dataset.annotationSize = "true";
-    sizeInput.style.cssText = "width: 92px; accent-color: #f97316; cursor: pointer;";
-    sizeInput.addEventListener("click", (event) => event.stopPropagation());
-    sizeInput.addEventListener("input", () => {
+    const fontSizeSelect = document.createElement("select");
+    fontSizeSelect.title = "Font size";
+    fontSizeSelect.setAttribute("aria-label", "Font size");
+    fontSizeSelect.dataset.annotationFontSize = "true";
+    fontSizeSelect.style.cssText = controlBaseStyles("72px");
+    FONT_SIZE_PRESETS.forEach((size) => {
+      const option = document.createElement("option");
+      option.value = String(size);
+      option.textContent = `${size}px`;
+      fontSizeSelect.appendChild(option);
+    });
+    const customSizeOption = document.createElement("option");
+    customSizeOption.value = "custom";
+    customSizeOption.textContent = "Custom";
+    fontSizeSelect.appendChild(customSizeOption);
+    fontSizeSelect.value = String(DEFAULT_ANNOTATION_FONT_SIZE);
+
+    const fontSizeCustomInput = document.createElement("input");
+    fontSizeCustomInput.type = "number";
+    fontSizeCustomInput.min = "8";
+    fontSizeCustomInput.max = "96";
+    fontSizeCustomInput.step = "1";
+    fontSizeCustomInput.value = String(DEFAULT_ANNOTATION_FONT_SIZE);
+    fontSizeCustomInput.title = "Custom font size";
+    fontSizeCustomInput.setAttribute("aria-label", "Custom font size");
+    fontSizeCustomInput.dataset.annotationFontSizeCustom = "true";
+    fontSizeCustomInput.style.cssText = `${controlBaseStyles("54px")}; display: none;`;
+
+    fontSizeSelect.addEventListener("click", (event) => event.stopPropagation());
+    fontSizeSelect.addEventListener("change", () => {
       if (!overlayState) return;
-      overlayState.annotationSize = clamp(Number(sizeInput.value) || 24, 12, 48);
-      sizeBadge.textContent = String(overlayState.annotationSize);
-      syncActiveTextEditorStyle();
+      if (fontSizeSelect.value === "custom") {
+        fontSizeCustomInput.style.display = "block";
+        fontSizeCustomInput.focus();
+        return;
+      }
+      fontSizeCustomInput.style.display = "none";
+      setAnnotationFontSize(Number(fontSizeSelect.value));
+    });
+    fontSizeCustomInput.addEventListener("click", (event) => event.stopPropagation());
+    fontSizeCustomInput.addEventListener("input", () => {
+      if (!overlayState) return;
+      setAnnotationFontSize(Number(fontSizeCustomInput.value));
     });
 
-    const sizeBadge = document.createElement("div");
-    sizeBadge.textContent = "24";
-    sizeBadge.style.cssText = "min-width: 28px; color: rgba(255,255,255,0.78); font: 12px/1 system-ui, sans-serif; text-align: center;";
+    const strokeControl = document.createElement("div");
+    strokeControl.style.cssText = "position: relative; flex: 0 0 auto;";
+
+    const strokeButton = document.createElement("button");
+    strokeButton.type = "button";
+    strokeButton.title = "Line thickness";
+    strokeButton.setAttribute("aria-label", "Line thickness");
+    strokeButton.style.cssText = [
+      controlBaseStyles("78px"),
+      "display: inline-flex",
+      "align-items: center",
+      "justify-content: center",
+      "padding: 0 10px",
+    ].join(";");
+
+    const strokePreview = document.createElement("span");
+    strokePreview.dataset.annotationStrokePreview = "true";
+    strokePreview.style.cssText = [
+      "display: block",
+      "width: 44px",
+      "height: 0",
+      `border-top: ${DEFAULT_ANNOTATION_STROKE_WIDTH}px solid ${DEFAULT_ANNOTATION_COLOR}`,
+      "border-radius: 999px",
+    ].join(";");
+    strokeButton.appendChild(strokePreview);
+
+    const strokeMenu = document.createElement("div");
+    strokeMenu.style.cssText = [
+      "position: absolute",
+      "left: 0",
+      "top: calc(100% + 8px)",
+      "display: none",
+      "width: 132px",
+      "padding: 8px",
+      "box-sizing: border-box",
+      "background: rgba(15, 23, 42, 0.98)",
+      "border: 1px solid rgba(255,255,255,0.14)",
+      "border-radius: 8px",
+      "box-shadow: 0 14px 36px rgba(0,0,0,0.28)",
+      "z-index: 2147483647",
+    ].join(";");
+
+    STROKE_WIDTH_PRESETS.forEach((width) => {
+      const option = document.createElement("button");
+      option.type = "button";
+      option.title = `${width}px`;
+      option.setAttribute("aria-label", `${width}px line thickness`);
+      option.style.cssText = [
+        "width: 100%",
+        "height: 28px",
+        "border: 0",
+        "border-radius: 6px",
+        "background: transparent",
+        "display: flex",
+        "align-items: center",
+        "justify-content: center",
+        "cursor: pointer",
+      ].join(";");
+      const line = document.createElement("span");
+      line.style.cssText = [
+        "display: block",
+        "width: 86px",
+        "height: 0",
+        `border-top: ${width}px solid rgba(255,255,255,0.88)`,
+        "border-radius: 999px",
+      ].join(";");
+      option.appendChild(line);
+      option.addEventListener("click", (event) => {
+        event.stopPropagation();
+        setAnnotationStrokeWidth(width);
+        strokeMenu.style.display = "none";
+      });
+      strokeMenu.appendChild(option);
+    });
+
+    const strokeCustomInput = document.createElement("input");
+    strokeCustomInput.type = "number";
+    strokeCustomInput.min = "1";
+    strokeCustomInput.max = "32";
+    strokeCustomInput.step = "1";
+    strokeCustomInput.value = String(DEFAULT_ANNOTATION_STROKE_WIDTH);
+    strokeCustomInput.placeholder = "px";
+    strokeCustomInput.title = "Custom line thickness";
+    strokeCustomInput.setAttribute("aria-label", "Custom line thickness");
+    strokeCustomInput.dataset.annotationStrokeCustom = "true";
+    strokeCustomInput.style.cssText = `${controlBaseStyles("100%")}; margin-top: 6px;`;
+    strokeCustomInput.addEventListener("click", (event) => event.stopPropagation());
+    strokeCustomInput.addEventListener("input", () => {
+      if (!overlayState) return;
+      setAnnotationStrokeWidth(Number(strokeCustomInput.value));
+    });
+    strokeMenu.appendChild(strokeCustomInput);
+
+    strokeButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      strokeMenu.style.display = strokeMenu.style.display === "none" ? "block" : "none";
+    });
+    strokeControl.appendChild(strokeButton);
+    strokeControl.appendChild(strokeMenu);
 
     const colorInput = document.createElement("input");
     colorInput.type = "color";
@@ -411,7 +552,7 @@
       "height: 28px",
       "padding: 0",
       "border: 0",
-      "border-radius: 999px",
+      "border-radius: 8px",
       "background: transparent",
       "cursor: pointer",
       "overflow: hidden",
@@ -420,15 +561,36 @@
     colorInput.addEventListener("click", (event) => event.stopPropagation());
     colorInput.addEventListener("input", () => {
       if (!overlayState) return;
-      overlayState.annotationColor = colorInput.value || DEFAULT_ANNOTATION_COLOR;
-      syncActiveTextEditorStyle();
+      setAnnotationColor(colorInput.value || DEFAULT_ANNOTATION_COLOR);
     });
 
-    toolbar.appendChild(toolWrap);
-    toolbar.appendChild(divider);
-    toolbar.appendChild(sizeInput);
-    toolbar.appendChild(sizeBadge);
-    toolbar.appendChild(colorInput);
+    const hexInput = document.createElement("input");
+    hexInput.type = "text";
+    hexInput.value = DEFAULT_ANNOTATION_COLOR;
+    hexInput.spellcheck = false;
+    hexInput.title = "Hex color";
+    hexInput.setAttribute("aria-label", "Hex color");
+    hexInput.dataset.annotationHex = "true";
+    hexInput.style.cssText = controlBaseStyles("82px");
+    hexInput.addEventListener("click", (event) => event.stopPropagation());
+    hexInput.addEventListener("input", () => {
+      const hex = normalizeHexColor(hexInput.value);
+      if (hex && overlayState) {
+        setAnnotationColor(hex);
+      }
+    });
+    hexInput.addEventListener("blur", () => {
+      if (overlayState) hexInput.value = overlayState.annotationColor;
+    });
+
+    styleGroup.appendChild(fontSizeSelect);
+    styleGroup.appendChild(fontSizeCustomInput);
+    styleGroup.appendChild(strokeControl);
+    styleGroup.appendChild(colorInput);
+    styleGroup.appendChild(hexInput);
+
+    toolbar.appendChild(toolGroup);
+    toolbar.appendChild(styleGroup);
 
     return toolbar;
   }
@@ -604,15 +766,17 @@
   function positionAnnotationToolbar(rect) {
     if (!overlayState?.annotationToolbar) return;
     const toolbar = overlayState.annotationToolbar;
+    const toolbarWidth = Math.min(ANNOTATION_TOOLBAR_WIDTH, Math.max(1, window.innerWidth - 16));
+    const toolbarHeight = toolbar.getBoundingClientRect().height || ANNOTATION_TOOLBAR_HEIGHT;
     const left = clamp(
-      rect.x + rect.width - ANNOTATION_TOOLBAR_WIDTH,
+      rect.x + rect.width - toolbarWidth,
       8,
-      window.innerWidth - ANNOTATION_TOOLBAR_WIDTH - 8,
+      window.innerWidth - toolbarWidth - 8,
     );
     const top = clamp(
-      rect.y - ANNOTATION_TOOLBAR_HEIGHT - TOOLBAR_GAP,
+      rect.y - toolbarHeight - TOOLBAR_GAP,
       8,
-      Math.max(8, window.innerHeight - ANNOTATION_TOOLBAR_HEIGHT - 8),
+      Math.max(8, window.innerHeight - toolbarHeight - 8),
     );
 
     toolbar.style.left = `${left}px`;
@@ -762,7 +926,7 @@
 
     if (!withArrow) return;
     const angle = Math.atan2(end.y - start.y, end.x - start.x);
-    const headLength = Math.max(12, (overlayState?.annotationSize || 24) * 0.9);
+    const headLength = Math.max(12, getAnnotationStrokeWidth() * 4);
     ctx.beginPath();
     ctx.moveTo(end.x, end.y);
     ctx.lineTo(
@@ -827,15 +991,83 @@
     ].join(";");
   }
 
+  function controlBaseStyles(width) {
+    return [
+      `width: ${width}`,
+      "height: 32px",
+      "box-sizing: border-box",
+      "border: 1px solid rgba(255,255,255,0.18)",
+      "border-radius: 8px",
+      "background: rgba(255,255,255,0.08)",
+      "color: white",
+      "padding: 0 8px",
+      "font: 12px/1 system-ui, sans-serif",
+      "font-weight: 600",
+      "outline: none",
+      "cursor: pointer",
+    ].join(";");
+  }
+
   function getAnnotationStrokeWidth() {
-    return Math.max(2, Math.round((overlayState?.annotationSize || 24) / 8));
+    return clamp(Math.round(overlayState?.annotationStrokeWidth || DEFAULT_ANNOTATION_STROKE_WIDTH), 1, 32);
+  }
+
+  function setAnnotationFontSize(size) {
+    if (!overlayState) return;
+    const nextSize = clamp(Math.round(size || DEFAULT_ANNOTATION_FONT_SIZE), 8, 96);
+    overlayState.annotationFontSize = nextSize;
+    if (overlayState.styleFontSizeCustomInput) {
+      overlayState.styleFontSizeCustomInput.value = String(nextSize);
+    }
+    syncActiveTextEditorStyle();
+  }
+
+  function setAnnotationStrokeWidth(width) {
+    if (!overlayState) return;
+    const nextWidth = clamp(Math.round(width || DEFAULT_ANNOTATION_STROKE_WIDTH), 1, 32);
+    overlayState.annotationStrokeWidth = nextWidth;
+    if (overlayState.styleStrokeCustomInput) {
+      overlayState.styleStrokeCustomInput.value = String(nextWidth);
+    }
+    updateStrokePreview();
+  }
+
+  function updateStrokePreview() {
+    if (!overlayState?.styleStrokePreview) return;
+    overlayState.styleStrokePreview.style.borderTop = `${getAnnotationStrokeWidth()}px solid ${overlayState.annotationColor}`;
+  }
+
+  function setAnnotationColor(color) {
+    if (!overlayState) return;
+    const hex = normalizeHexColor(color);
+    if (!hex) return;
+    overlayState.annotationColor = hex;
+    if (overlayState.styleColorInput) {
+      overlayState.styleColorInput.value = hex;
+    }
+    if (overlayState.styleHexInput) {
+      overlayState.styleHexInput.value = hex;
+    }
+    updateStrokePreview();
+    syncActiveTextEditorStyle();
+  }
+
+  function normalizeHexColor(value) {
+    const text = String(value || "").trim();
+    const match = text.match(/^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+    if (!match) return null;
+    const hex = match[1].toLowerCase();
+    if (hex.length === 3) {
+      return `#${hex[0]}${hex[0]}${hex[1]}${hex[1]}${hex[2]}${hex[2]}`;
+    }
+    return `#${hex}`;
   }
 
   function syncActiveTextEditorStyle() {
     const active = overlayState?.activeTextEditor?.editor;
     if (!active || !overlayState) return;
     active.style.color = overlayState.annotationColor;
-    active.style.font = `${overlayState.annotationSize}px/1.25 system-ui, sans-serif`;
+    active.style.font = `${overlayState.annotationFontSize}px/1.25 system-ui, sans-serif`;
     active.style.fontWeight = "400";
     active.style.caretColor = overlayState.annotationColor;
     active.style.textShadow = "none";
@@ -882,11 +1114,11 @@
     const ctx = overlayState?.annotationCtx;
     if (!ctx || !overlayState) return;
     const lines = String(text).split("\n");
-    const lineHeight = Math.round(overlayState.annotationSize * 1.25);
+    const lineHeight = Math.round(overlayState.annotationFontSize * 1.25);
 
     ctx.save();
     ctx.fillStyle = overlayState.annotationColor;
-    ctx.font = `${overlayState.annotationSize}px system-ui, sans-serif`;
+    ctx.font = `${overlayState.annotationFontSize}px system-ui, sans-serif`;
     ctx.textBaseline = "top";
 
     lines.forEach((line, index) => {

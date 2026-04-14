@@ -35,7 +35,6 @@ export const DEFAULT_STATE = {
   showArrow: true,
   arrowStyle: "solid" as "solid" | "dashed" | "double",
   arrowColor: "#0557F0",
-  arrowThickness: 3,
   arrowSize: "medium" as "small" | "medium" | "large",
   backgroundType: "gradient" as "solid" | "gradient" | "transparent",
   backgroundColor: "#d4edda",

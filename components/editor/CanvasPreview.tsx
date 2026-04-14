@@ -426,8 +426,10 @@ export const CanvasPreview = forwardRef<CanvasPreviewHandle, CanvasPreviewProps>
       direction: "horizontal" | "vertical",
       s: EditorState
     ) {
-      const lineW = s.arrowThickness
-      const headSize = 10 * Math.max(1, lineW / 2)
+      const sizeMap = { small: 1, medium: 1.5, large: 2 }
+      const sz = sizeMap[s.arrowSize]
+      const lineW = 2 * sz
+      const headSize = 10 * sz
 
       ctx.save()
       ctx.strokeStyle = s.arrowColor

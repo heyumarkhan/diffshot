@@ -1,7 +1,7 @@
 (() => {
   const STORAGE_PREFIX = "gleamshot-extension-capture:";
   const OVERLAY_ID = "gleamshot-capture-overlay";
-  const TOOLBAR_GAP = 12;
+  const TOOLBAR_GAP = 0;
   const TOOLBAR_HEIGHT = 48;
   const TOOLBAR_WIDTH = 196;
   const ANNOTATION_TOOLBAR_HEIGHT = 44;
@@ -651,7 +651,7 @@
     const fitsBelow = rect.y + rect.height + TOOLBAR_GAP + TOOLBAR_HEIGHT <= window.innerHeight;
     const top = fitsBelow
       ? rect.y + rect.height + TOOLBAR_GAP
-      : Math.max(8, rect.y + rect.height - TOOLBAR_HEIGHT - 8);
+      : Math.max(8, rect.y + rect.height - TOOLBAR_HEIGHT);
     const left = Math.min(
       Math.max(8, rect.x + rect.width - TOOLBAR_WIDTH),
       window.innerWidth - TOOLBAR_WIDTH - 8,
@@ -704,11 +704,9 @@
       8,
       window.innerWidth - toolbarWidth - 8,
     );
-    const top = clamp(
-      rect.y - toolbarHeight - TOOLBAR_GAP,
-      8,
-      Math.max(8, window.innerHeight - toolbarHeight - 8),
-    );
+    const top = rect.y >= toolbarHeight + TOOLBAR_GAP + 8
+      ? rect.y - toolbarHeight - TOOLBAR_GAP
+      : clamp(rect.y, 8, Math.max(8, window.innerHeight - toolbarHeight - 8));
 
     toolbar.style.left = `${left}px`;
     toolbar.style.top = `${top}px`;

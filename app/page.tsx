@@ -70,7 +70,11 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-white/10 px-8 py-4 text-center text-gray-600 text-xs flex-shrink-0">
-        Made for quick product visuals. Free.
+        <span>Made for quick product visuals. Free.</span>
+        <span className="mx-2 text-gray-700">•</span>
+        <Link href="/privacy" className="text-gray-500 hover:text-white transition-colors">
+          Privacy Policy
+        </Link>
       </footer>
     </main>
   )

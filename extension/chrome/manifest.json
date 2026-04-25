@@ -5,8 +5,9 @@
   "version": "0.1.0",
   "permissions": ["activeTab", "storage", "tabs", "downloads"],
   "icons": {
-    "16": "assets/favicon.ico",
-    "32": "assets/favicon.ico"
+    "16": "assets/favicon.png",
+    "32": "assets/favicon.png",
+    "48": "assets/favicon.png"
   },
   "background": {
     "service_worker": "background.js"
@@ -14,8 +15,9 @@
   "action": {
     "default_title": "Capture with GleamShot",
     "default_icon": {
-      "16": "assets/favicon.ico",
-      "32": "assets/favicon.ico"
+      "16": "assets/favicon.png",
+      "32": "assets/favicon.png",
+      "48": "assets/favicon.png"
     }
   },
   "content_scripts": [

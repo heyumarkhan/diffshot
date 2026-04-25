@@ -7,7 +7,8 @@
   "icons": {
     "16": "assets/favicon.png",
     "32": "assets/favicon.png",
-    "48": "assets/favicon.png"
+    "48": "assets/favicon.png",
+    "128": "assets/icon-128.png"
   },
   "background": {
     "service_worker": "background.js"

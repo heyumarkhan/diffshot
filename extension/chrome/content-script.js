@@ -331,7 +331,7 @@
       }
     }));
 
-    toolbar.appendChild(createIconButton("Edit", "✎", async () => {
+    toolbar.appendChild(createIconButton("Edit in GleamShot", "✎", async () => {
       if (!overlayState?.captureKey || overlayState.busy) return;
       overlayState.busy = true;
       try {
@@ -630,11 +630,11 @@
     overlayState.rect = rect;
 
     try {
-      const response = await chrome.runtime.sendMessage({
+      const response = await captureWithoutChrome(() => chrome.runtime.sendMessage({
         type: "GLEAMSHOT_CAPTURE_SELECTION",
         rect,
         viewport,
-      });
+      }));
 
       if (!response?.ok || !response.captureKey) {
         throw new Error(response?.error || "Capture failed");
@@ -1148,6 +1148,68 @@
     await navigator.clipboard.write([
       new ClipboardItem({ [blob.type || "image/png"]: blob }),
     ]);
+  }
+
+
+  async function captureWithoutChrome(capture) {
+    if (!overlayState) {
+      return await capture();
+    }
+
+    const {
+      box,
+      toolbar,
+      annotationToolbar,
+      annotationCanvas,
+      hint,
+      activeTextEditor,
+    } = overlayState;
+
+    const previous = {
+      box: box.style.visibility,
+      toolbar: toolbar.style.visibility,
+      annotationToolbar: annotationToolbar.style.visibility,
+      annotationCanvas: annotationCanvas.style.visibility,
+      hint: hint.style.visibility,
+      activeTextEditor: activeTextEditor?.editor?.style.visibility ?? "",
+    };
+
+    box.style.visibility = "hidden";
+    toolbar.style.visibility = "hidden";
+    annotationToolbar.style.visibility = "hidden";
+    annotationCanvas.style.visibility = "hidden";
+    hint.style.visibility = "hidden";
+    if (activeTextEditor?.editor) {
+      activeTextEditor.editor.style.visibility = "hidden";
+    }
+
+    await waitForCleanFrame();
+
+    try {
+      return await capture();
+    } finally {
+      if (overlayState) {
+        box.style.visibility = previous.box;
+        toolbar.style.visibility = previous.toolbar;
+        annotationToolbar.style.visibility = previous.annotationToolbar;
+        annotationCanvas.style.visibility = previous.annotationCanvas;
+        hint.style.visibility = previous.hint;
+        if (overlayState.activeTextEditor?.editor) {
+          overlayState.activeTextEditor.editor.style.visibility = previous.activeTextEditor;
+        }
+        await waitForCleanFrame();
+      }
+    }
+  }
+
+  function waitForCleanFrame() {
+    return new Promise((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.setTimeout(resolve, 34);
+        });
+      });
+    });
   }
 
   async function teardownOverlay({ preserveCapture }) {

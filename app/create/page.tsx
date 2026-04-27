@@ -27,8 +27,7 @@ export default function CreatePage() {
   const [captureKey, setCaptureKey] = useState<string | null>(null)
 
   const hasImage = !!(state.beforeImage || state.afterImage)
-  const hasStarterCopy = !!(state.title || state.subtitle || state.badge)
-
+  
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     setLaunchSource(params.get("source"))
@@ -61,11 +60,21 @@ export default function CreatePage() {
           beforeImage: file,
           afterImage: null,
           mode: "single",
-          title: state.title || "Fresh screenshot capture",
-          subtitle: state.subtitle || "Captured from the Chrome extension and ready to polish.",
-          badge: state.badge || "EXTENSION",
-          beforeLabel: state.beforeLabel || "SCREENSHOT",
-          beforeSublabel: state.beforeSublabel || "Captured area",
+          title: "",
+          subtitle: "",
+          badge: "",
+          beforeLabel: "",
+          beforeSublabel: "",
+          afterLabel: "",
+          afterSublabel: "",
+          labelPosition: "hidden",
+          showWatermark: false,
+          backgroundType: "gradient",
+          gradientPresetIndex: 5,
+          gradientStart: "#f093fb",
+          gradientEnd: "#f5576c",
+          frameStyle: "rounded",
+          borderRadius: 8,
         })
         consumedCaptureRef.current = captureKey
         setExtensionStatus("ready")
@@ -91,20 +100,31 @@ export default function CreatePage() {
       cancelled = true
       window.removeEventListener("gleamshot-extension-capture-ready", handleCaptureReady)
     }
-  }, [captureKey, launchSource, state.badge, state.beforeLabel, state.beforeSublabel, state.subtitle, state.title, updateState])
+  }, [captureKey, launchSource, updateState])
 
   function handleBeforeUpload(file: File) {
     updateState({
       beforeImage: file,
-      ...(!hasImage && !hasStarterCopy
-        ? {
-            title: "Product update",
-            subtitle: "A cleaner product moment, ready to share.",
-            badge: "UPDATE",
-            beforeLabel: "PRODUCT",
-            beforeSublabel: "Screenshot",
-          }
-        : {}),
+      ...(state.afterImage
+        ? {}
+        : {
+            mode: "single",
+            title: "",
+            subtitle: "",
+            badge: "",
+            beforeLabel: "",
+            beforeSublabel: "",
+            afterLabel: "",
+            afterSublabel: "",
+            labelPosition: "hidden",
+            showWatermark: false,
+            backgroundType: "gradient",
+            gradientPresetIndex: 5,
+            gradientStart: "#f093fb",
+            gradientEnd: "#f5576c",
+            frameStyle: "rounded",
+            borderRadius: 8,
+          }),
     })
     setMobileTab("preview")
   }
@@ -115,10 +135,10 @@ export default function CreatePage() {
       ...(state.beforeImage
         ? {
             mode: "compare",
-            beforeLabel: "BEFORE",
-            afterLabel: "AFTER",
-            beforeSublabel: state.beforeSublabel || "Before",
-            afterSublabel: state.afterSublabel || "After",
+            beforeLabel: state.beforeLabel || "",
+            afterLabel: state.afterLabel || "",
+            beforeSublabel: state.beforeSublabel || "",
+            afterSublabel: state.afterSublabel || "",
           }
         : {}),
     })

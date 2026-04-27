@@ -9,6 +9,7 @@
   const DEFAULT_ANNOTATION_STROKE_WIDTH = 3;
   const TEXT_SIZE_PER_STROKE_WIDTH = 8;
   const STROKE_WIDTH_PRESETS = [2, 3, 4, 6, 8, 12];
+  const FIXED_UI_SCALE = 1 / (window.visualViewport?.scale || 1);
   let overlayState = null;
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -52,6 +53,7 @@
       "z-index: 2147483647",
       "cursor: crosshair",
       "user-select: none",
+      `font-size: ${FIXED_UI_SCALE}rem`,
     ].join(";");
 
     const shadeTop = createShade();
@@ -143,6 +145,8 @@
       activeTextEditor: null,
       hint,
       shades: [shadeTop, shadeRight, shadeBottom, shadeLeft],
+      selectingFresh: true,
+      ignoreNextClick: false,
       dragging: false,
       startX: 0,
       startY: 0,
@@ -170,15 +174,14 @@
     document.addEventListener("keydown", overlayState.keyHandler, true);
 
     overlay.addEventListener("pointerdown", (event) => {
-      if (overlayState?.busy || overlayState?.captureKey) return;
+      if (!overlayState || overlayState.busy) return;
       if (event.target !== overlay) return;
-      overlayState.dragging = true;
-      overlayState.startX = event.clientX;
-      overlayState.startY = event.clientY;
-      updateBox(event.clientX, event.clientY);
-      box.style.display = "block";
-      hint.style.display = "none";
-      toolbar.style.display = "none";
+      if (overlayState.captureKey && pointInRect(event.clientX, event.clientY, overlayState.rect)) return;
+      if (overlayState.ignoreNextClick) {
+        overlayState.ignoreNextClick = false;
+        return;
+      }
+      beginFreshSelection(event.clientX, event.clientY);
       event.preventDefault();
     });
 
@@ -192,6 +195,10 @@
       overlayState.dragging = false;
       const rect = getRect(event.clientX, event.clientY);
       if (rect.width < 8 || rect.height < 8) {
+        if (overlayState.captureKey) {
+          showToolbar(overlayState.rect);
+          return;
+        }
         teardownOverlay({ preserveCapture: false });
         return;
       }
@@ -215,6 +222,29 @@
       const width = Math.abs(currentX - overlayState.startX);
       const height = Math.abs(currentY - overlayState.startY);
       return { x, y, width, height };
+    }
+
+    function beginFreshSelection(startX, startY) {
+      if (!overlayState) return;
+      overlayState.dragging = true;
+      overlayState.startX = startX;
+      overlayState.startY = startY;
+      overlayState.captureKey = null;
+      overlayState.annotationsDirty = false;
+      overlayState.annotationDraft = null;
+      clearAnnotationCanvas();
+      removeActiveTextEditor();
+      box.style.display = "block";
+      hint.style.display = "none";
+      toolbar.style.display = "none";
+      annotationToolbar.style.display = "none";
+      annotationCanvas.style.display = "none";
+      updateBox(startX, startY);
+    }
+
+    function pointInRect(x, y, rect) {
+      if (!rect) return false;
+      return x >= rect.x && y >= rect.y && x <= rect.x + rect.width && y <= rect.y + rect.height;
     }
   }
 
@@ -590,6 +620,7 @@
 
   async function captureSelectionForToolbar(rect) {
     if (!overlayState) return;
+    commitActiveTextEditor();
     const viewport = {
       width: window.innerWidth,
       height: window.innerHeight,
@@ -599,11 +630,11 @@
     overlayState.rect = rect;
 
     try {
-      const response = await captureWithOverlayHidden(() => chrome.runtime.sendMessage({
+      const response = await chrome.runtime.sendMessage({
         type: "GLEAMSHOT_CAPTURE_SELECTION",
         rect,
         viewport,
-      }));
+      });
 
       if (!response?.ok || !response.captureKey) {
         throw new Error(response?.error || "Capture failed");
@@ -620,7 +651,7 @@
   }
 
   async function captureVisibleAreaSelection() {
-    if (!overlayState || overlayState.busy || overlayState.captureKey) return;
+    if (!overlayState || overlayState.busy) return;
     const rect = {
       x: 0,
       y: 0,
@@ -643,7 +674,9 @@
 
   function showToolbar(rect) {
     if (!overlayState) return;
-    const { toolbar, annotationToolbar, annotationCanvas } = overlayState;
+    const { toolbar, annotationToolbar, annotationCanvas, box, hint } = overlayState;
+    box.style.display = "block";
+    hint.style.display = "none";
     toolbar.style.display = "flex";
     annotationToolbar.style.display = "flex";
     annotationCanvas.style.display = "block";
@@ -757,6 +790,12 @@
     if (!overlayState?.annotationDraft) return;
     restoreAnnotationSnapshot(overlayState.annotationDraft.snapshot);
     overlayState.annotationDraft = null;
+  }
+
+  function clearAnnotationCanvas() {
+    if (!overlayState?.annotationCanvas || !overlayState.annotationCtx) return;
+    const { annotationCanvas, annotationCtx } = overlayState;
+    annotationCtx.clearRect(0, 0, annotationCanvas.width, annotationCanvas.height);
   }
 
   function beginInlineTextAnnotation(point) {
@@ -1109,36 +1148,6 @@
     await navigator.clipboard.write([
       new ClipboardItem({ [blob.type || "image/png"]: blob }),
     ]);
-  }
-
-  async function captureWithOverlayHidden(capture) {
-    if (!overlayState) {
-      return await capture();
-    }
-
-    const { overlay } = overlayState;
-    const previousVisibility = overlay.style.visibility;
-    overlay.style.visibility = "hidden";
-    await waitForCleanFrame();
-
-    try {
-      return await capture();
-    } finally {
-      if (overlayState) {
-        overlay.style.visibility = previousVisibility;
-        await waitForCleanFrame();
-      }
-    }
-  }
-
-  function waitForCleanFrame() {
-    return new Promise((resolve) => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          window.setTimeout(resolve, 50);
-        });
-      });
-    });
   }
 
   async function teardownOverlay({ preserveCapture }) {

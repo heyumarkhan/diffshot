@@ -1,13 +1,24 @@
 const STORAGE_PREFIX = "gleamshot-extension-capture:";
 const EDITOR_URL = "https://gleamshot.io/create";
 
-chrome.action.onClicked.addListener(async (tab) => {
+async function startCaptureOnTab(tab) {
   if (!tab?.id) return;
   try {
     await chrome.tabs.sendMessage(tab.id, { type: "GLEAMSHOT_START_CAPTURE" });
   } catch (error) {
     console.warn("Could not start capture overlay", error);
   }
+}
+
+chrome.action.onClicked.addListener(async (tab) => {
+  await startCaptureOnTab(tab);
+});
+
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command !== "launch-capture") return;
+
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  await startCaptureOnTab(tab);
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

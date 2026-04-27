@@ -38,14 +38,14 @@ export const DEFAULT_STATE = {
   arrowSize: "medium" as "small" | "medium" | "large",
   backgroundType: "gradient" as "solid" | "gradient" | "transparent",
   backgroundColor: "#d4edda",
-  gradientPresetIndex: 4,
-  gradientStart: "#d4edda",
-  gradientEnd: "#a8d5b5",
+  gradientPresetIndex: 5,
+  gradientStart: "#f093fb",
+  gradientEnd: "#f5576c",
   frameStyle: "rounded" as "none" | "shadow" | "browser" | "rounded",
   borderRadius: 8,
   shadowIntensity: "medium" as "light" | "medium" | "strong",
   exportSize: "linkedin" as "linkedin" | "twitter" | "square" | "tall",
-  showWatermark: true,
+  showWatermark: false,
 }
 
 export type EditorState = typeof DEFAULT_STATE & {

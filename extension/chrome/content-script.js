@@ -89,7 +89,7 @@
       "gap: 10px",
       "box-shadow: 0 10px 30px rgba(0,0,0,0.25)",
     ].join(";");
-    hint.innerHTML = '<span>Drag to select, or press <strong>Ctrl/⌘ + Shift + S</strong></span>';
+    hint.innerHTML = '<span>Drag to select an area</span>';
 
     const fullButton = document.createElement("button");
     fullButton.type = "button";

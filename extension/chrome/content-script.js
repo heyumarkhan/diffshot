@@ -89,11 +89,11 @@
       "gap: 10px",
       "box-shadow: 0 10px 30px rgba(0,0,0,0.25)",
     ].join(";");
-    hint.innerHTML = '<span><strong>GleamShot capture</strong> · drag to select an area</span>';
+    hint.innerHTML = '<span>Drag to select, or press <strong>Ctrl/⌘ + Shift + S</strong></span>';
 
     const fullButton = document.createElement("button");
     fullButton.type = "button";
-    fullButton.textContent = "Capture visible tab";
+    fullButton.textContent = "Capture screen";
     fullButton.style.cssText = buttonBaseStyles("#3b82f6", "white", "0");
     fullButton.addEventListener("click", async (event) => {
       event.stopPropagation();
